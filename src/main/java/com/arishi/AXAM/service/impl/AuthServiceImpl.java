@@ -1,0 +1,215 @@
+package com.arishi.AXAM.service.impl;
+
+import com.arishi.AXAM.dto.request.*;
+import com.arishi.AXAM.dto.responce.LoginResponse;
+import com.arishi.AXAM.dto.responce.LoginResult;
+import com.arishi.AXAM.dto.responce.RegistrationResponse;
+import com.arishi.AXAM.dto.responce.TokenResponse;
+import com.arishi.AXAM.enums.UserStatus;
+import com.arishi.AXAM.exception.BadRequestException;
+import com.arishi.AXAM.exception.InvalidTokenException;
+import com.arishi.AXAM.exception.ResourceNotFoundException;
+import com.arishi.AXAM.mapper.UserMapper;
+import com.arishi.AXAM.model.*;
+import com.arishi.AXAM.repo.*;
+import com.arishi.AXAM.security.JwtService;
+import com.arishi.AXAM.security.RefreshTokenIssuer;
+import com.arishi.AXAM.service.AuthService;
+import com.arishi.AXAM.service.EmailService;
+import com.arishi.AXAM.util.HashUtil;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+
+    private final UserRepository userRepository;
+
+    private final RoleRepository roleRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final UserMapper userMapper;
+
+    private final JwtService jwtService;
+
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    private final RefreshTokenIssuer refreshTokenIssuer;
+
+    private final HashUtil hashUtil;
+
+    private final EmailVerificationTokenRepository emailTokenRepository;
+
+    private final PasswordResetTokenRepository passwordResetRepository;
+
+    private final LoginHistoryRepository loginHistoryRepository;
+
+
+    private final EmailService emailService;
+
+    @Override
+    @Transactional
+    public RegistrationResponse signup(RegistrationRequest request) {
+
+        //  email exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        // Convert DTO to Entity
+        Users user = userMapper.toEntity(request);
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Password not match.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+
+        // Default role Candidate
+        Roles role = roleRepository.findByName("ADMIN").orElseThrow(() -> new ResourceNotFoundException("Default role CANDIDATE not found"));
+
+        user.setRole(role);
+
+        user.setStatus(UserStatus.PENDING);
+
+        userRepository.save(user);
+
+        // verification token genrate
+        EmailVerificationToken token = new EmailVerificationToken();
+        token.setUser(user);
+        token.setTokenHash(UUID.randomUUID().toString());
+        token.setExpiresAt(Instant.now().plusSeconds(120));
+
+        emailTokenRepository.save(token);
+
+        // create verification link
+        String verificationLink = " https://thelma-claviculate-teodoro.ngrok-free.dev/api/v1/auth/verifyemail?token=" + token.getTokenHash();
+
+        // Send email
+        emailService.sendVerificationEmail(user.getEmail(), verificationLink);
+
+
+        return RegistrationResponse.builder().userId(user.getId()).email(user.getEmail()).message("Verification email sent").build();
+    }
+
+
+    @Override
+    public LoginResult login(LoginRequest request) {
+
+        Users user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            throw new BadRequestException("Invalid email or password");
+        }
+
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            recordLoginHistory(user, "PASSWORD", "FAILURE", "Invalid password");
+            throw new BadRequestException("Invalid email or password");
+        }
+
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            recordLoginHistory(user, "PASSWORD", "FAILURE", "Account blocked");
+            throw new BadRequestException("Account is blocked");
+        }
+
+        if (user.getStatus() == UserStatus.PENDING || !user.isEmailVerified()) {
+            recordLoginHistory(user, "PASSWORD", "FAILURE", "email not verified");
+            throw new BadRequestException("verify your email before logging");
+        }
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = refreshTokenIssuer.issue(user, null);
+
+        LoginResponse response = LoginResponse.builder().userId(user.getId()).email(user.getEmail()).role(user.getRole().getName()).build();
+
+        return LoginResult.builder().response(response).accessToken(accessToken).refreshToken(refreshToken).build();
+
+    }
+
+
+    @Transactional
+    @Override
+    public void verifyEmail(String tokenHash) {
+
+        EmailVerificationToken verificationToken = emailTokenRepository.findByTokenHash(tokenHash).orElseThrow(() -> new InvalidTokenException("Invalid verification token"));
+
+        if (verificationToken.isUsed()) {
+            throw new InvalidTokenException("Verification token already used");
+        }
+
+        if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new InvalidTokenException("Verification token expired");
+        }
+
+        Users user = verificationToken.getUser();
+
+        user.setEmailVerified(true);
+
+        user.setStatus(UserStatus.ACTIVE);
+
+        userRepository.save(user);
+
+        verificationToken.setUsed(true);
+
+        verificationToken.setVerifiedAt(Instant.now());
+
+        emailTokenRepository.save(verificationToken);
+
+    }
+
+
+    private void recordLoginHistory(Users user, String loginType, String status, String failureReason) {
+        LoginHistory history = new LoginHistory();
+        history.setUser(user);
+        history.setLoginType(loginType);
+        history.setLoginStatus(status);
+        history.setFailureReason(failureReason);
+        history.setLoginTime(Instant.now());
+        loginHistoryRepository.save(history);
+    }
+
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        Users user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("emil not found"));
+
+        PasswordResetToken token = new PasswordResetToken();
+
+        token.setUser(user);
+        token.setTokenHash(UUID.randomUUID().toString());
+        token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+
+        passwordResetRepository.save(token);
+
+        emailService.sendResetPasswordMail(user.getEmail(), token.getTokenHash());
+
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest request) {
+
+    }
+
+    @Override
+    public TokenResponse refreshToken(RefreshTokenRequest request) {
+        return null;
+    }
+
+    @Override
+    public void logout(RefreshTokenRequest request) {
+
+    }
+
+}
