@@ -70,7 +70,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private Users linkOrCreateUser(String provider, String providerUserId, String email, String name) {
-        Users user = userRepository.findByEmail(email).orElseGet(() -> createUser(email, name));
+        Users user = userRepository.findByEmailAndDeletedAtIsNull(email).orElseGet(() -> createUser(email, name));
 
         OAuthAccount account = new OAuthAccount();
         account.setUser(user);

@@ -46,7 +46,7 @@ public class SecurityConfig {
 
                 .formLogin(form -> form.disable()).httpBasic(httpBasic -> httpBasic.disable())
 
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/oauth2/**").permitAll().anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/oauth2/**","/forgotpassword/**" , "/login/oauth2/**").permitAll().anyRequest().authenticated())
 
                 .authenticationProvider(authenticationProvider())
 

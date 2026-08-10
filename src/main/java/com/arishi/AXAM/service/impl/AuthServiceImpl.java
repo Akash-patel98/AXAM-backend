@@ -16,7 +16,10 @@ import com.arishi.AXAM.security.JwtService;
 import com.arishi.AXAM.security.RefreshTokenIssuer;
 import com.arishi.AXAM.service.AuthService;
 import com.arishi.AXAM.service.EmailService;
+import com.arishi.AXAM.util.CookieUtils;
 import com.arishi.AXAM.util.HashUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -73,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         // Default role Candidate
-        Roles role = roleRepository.findByName("ADMIN").orElseThrow(() -> new ResourceNotFoundException("Default role CANDIDATE not found"));
+        Roles role = roleRepository.findByName("CANDIDATE").orElseThrow(() -> new ResourceNotFoundException("Default role CANDIDATE not found"));
 
         user.setRole(role);
 
@@ -103,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResult login(LoginRequest request) {
 
-        Users user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        Users user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail()).orElse(null);
         if (user == null) {
             throw new BadRequestException("Invalid email or password");
         }
@@ -178,7 +181,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
 
-        Users user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("emil not found"));
+        Users user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("emil not found"));
 
         PasswordResetToken token = new PasswordResetToken();
 
@@ -188,8 +191,30 @@ public class AuthServiceImpl implements AuthService {
 
         passwordResetRepository.save(token);
 
-        emailService.sendResetPasswordMail(user.getEmail(), token.getTokenHash());
+        String resetLink = " https://thelma-claviculate-teodoro.ngrok-free.dev/api/v1/auth/reset-password?token=" + token.getTokenHash();
 
+        emailService.sendResetPasswordMail(user.getEmail(), resetLink);
+
+    }
+
+    @Transactional
+    @Override
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+
+        // Get refresh token
+        String refreshToken = CookieUtils.getCookieValue(request, "refreshToken");
+
+        // Revoke refresh token
+        if (refreshToken != null) {
+            refreshTokenRepository.findByTokenHash(hashUtil.sha256(refreshToken)).ifPresent(token -> {
+                token.setRevoked(true);
+                refreshTokenRepository.save(token);
+            });
+        }
+
+        // Delete cookies
+        CookieUtils.deleteCookie(response, "accessToken", "/");
+        CookieUtils.deleteCookie(response, "refreshToken", "/api/auth");
     }
 
     @Override
@@ -205,11 +230,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse refreshToken(RefreshTokenRequest request) {
         return null;
-    }
-
-    @Override
-    public void logout(RefreshTokenRequest request) {
-
     }
 
 }

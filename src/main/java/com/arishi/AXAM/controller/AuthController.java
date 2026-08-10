@@ -7,6 +7,7 @@ import com.arishi.AXAM.dto.responce.LoginResult;
 import com.arishi.AXAM.dto.responce.RegistrationResponse;
 import com.arishi.AXAM.security.ResponseCookieHelper;
 import com.arishi.AXAM.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
@@ -62,6 +63,14 @@ public class AuthController {
 
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Password reset link sent"));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
+
+        authService.logout(request, response);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "logout successfully"));
     }
 
 

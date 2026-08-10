@@ -19,6 +19,7 @@ public class CookieUtils {
     }
 
     public static void deleteCookie(HttpServletResponse response, String name, String path) {
+
         ResponseCookie cookie = ResponseCookie.from(name, "").httpOnly(true).secure(false).path(path).maxAge(0).sameSite("Strict").build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

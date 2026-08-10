@@ -5,6 +5,9 @@ import com.arishi.AXAM.dto.request.*;
 import com.arishi.AXAM.dto.responce.LoginResult;
 import com.arishi.AXAM.dto.responce.RegistrationResponse;
 import com.arishi.AXAM.dto.responce.TokenResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
 public interface AuthService {
 
@@ -17,13 +20,16 @@ public interface AuthService {
 
     void forgotPassword(ForgotPasswordRequest request);
 
+    @Transactional
+    void logout(HttpServletRequest request, HttpServletResponse response);
+
     void resetPassword(ResetPasswordRequest request);
 
     void changePassword(ChangePasswordRequest request);
 
     TokenResponse refreshToken(RefreshTokenRequest request);
 
-    void logout(RefreshTokenRequest request);
+    //void logout(RefreshTokenRequest request);
 
 
 }
