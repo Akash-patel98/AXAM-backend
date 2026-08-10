@@ -10,11 +10,12 @@ import java.util.Optional;
 
 
 @Repository
-public interface CategoryRepo extends JpaRepository<Category, Long> {
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     boolean existsByTitleIgnoreCaseAndDeletedAtIsNull(String title);
 
     Optional<Category> findByTitleIgnoreCaseAndDeletedAtIsNull(String title);
+    Optional<Category>findByIdAndDeletedAtIsNull(Long id);
 
     List<Category> findByStatusAndDeletedAtIsNull(CategoryStatus status);;
 }

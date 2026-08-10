@@ -7,7 +7,7 @@ import com.arishi.AXAM.exception.DuplicateResourceException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.CategoryMapper;
 import com.arishi.AXAM.model.Category;
-import com.arishi.AXAM.repo.CategoryRepo;
+import com.arishi.AXAM.repo.CategoryRepository;
 import com.arishi.AXAM.service.CategoryService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,7 +22,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryMapper categoryMapper;
-    private final CategoryRepo categoryRepo;
+    private final CategoryRepository categoryRepository;
 
 
     @Override
@@ -30,13 +30,13 @@ public class CategoryServiceImpl implements CategoryService {
 
         // 1 Check duplicate category title and case In sensitive , Java==java
 
-        if (categoryRepo.existsByTitleIgnoreCaseAndDeletedAtIsNull(request.getTitle())) {
+        if (categoryRepository.existsByTitleIgnoreCaseAndDeletedAtIsNull(request.getTitle())) {
             throw new DuplicateResourceException("Category already exists");
         }
 
         Category category = categoryMapper.toEntity(request);
 
-        Category savedCategory = categoryRepo.save(category);
+        Category savedCategory = categoryRepository.save(category);
 
         return categoryMapper.toResponse(savedCategory);
     }
@@ -44,7 +44,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse getCategoryByTitle(String title) {
 
-        Category category = categoryRepo.findByTitleIgnoreCaseAndDeletedAtIsNull(title).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        Category category = categoryRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(title).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         return categoryMapper.toResponse(category);
     }
@@ -53,7 +53,7 @@ public class CategoryServiceImpl implements CategoryService {
     public List<CategoryResponse> getAllCategory() {
 
         // GEt All active caategories and deleted is null
-        List<Category> categories = categoryRepo.findByStatusAndDeletedAtIsNull(CategoryStatus.ACTIVE);
+        List<Category> categories = categoryRepository.findByStatusAndDeletedAtIsNull(CategoryStatus.ACTIVE);
 
         List<CategoryResponse> responses = new ArrayList<>();
 
