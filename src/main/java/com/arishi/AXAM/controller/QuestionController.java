@@ -15,16 +15,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping("/api/v1/questions")
 @RequiredArgsConstructor
 public class QuestionController {
 
     private final QuestionService questionService;
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping(value = "/questions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<QuestionResponse> createQuestion(@Valid @RequestPart("question") QuestionRequest request, @RequestPart(value = "image", required = false) MultipartFile image) {
 
         QuestionResponse response = questionService.createQuestion(request, image);
@@ -32,7 +31,9 @@ public class QuestionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/questions/all")
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping
     public ResponseEntity<List<QuestionResponse>> getAllQuestions() {
 
         List<QuestionResponse> response = questionService.getAllQuestions();
@@ -40,7 +41,9 @@ public class QuestionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/questions/category")
+    // Get Questions By Category
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/by-category")
     public ResponseEntity<List<QuestionResponse>> getQuestionsByCategory(@RequestParam String categoryTitle) {
 
         List<QuestionResponse> responses = questionService.getQuestionsByCategory(categoryTitle);
@@ -48,11 +51,33 @@ public class QuestionController {
         return ResponseEntity.ok(responses);
     }
 
-    @GetMapping("/questions/filter")
+    // Get Questions By Category And Difficulty
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/by-category-and-difficulty")
     public ResponseEntity<List<QuestionResponse>> getQuestionsByCategoryAndDifficulty(@RequestParam String category, @RequestParam DifficultyLevel difficultyLevel) {
 
         List<QuestionResponse> responses = questionService.getQuestionsByCategoryAndDifficulty(category, difficultyLevel);
 
         return ResponseEntity.ok(responses);
+    }
+
+    // Update Question
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<QuestionResponse> updateQuestion(@PathVariable Long id, @Valid @RequestPart("question") QuestionRequest request, @RequestPart(value = "image", required = false) MultipartFile image) {
+
+        QuestionResponse response = questionService.updateQuestion(id, request, image);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // Delete Question
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
+
+        questionService.deleteQuestionById(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,6 @@
 package com.arishi.AXAM.model;
 
-import com.arishi.AXAM.enums.ExamSchedularStatus;
+import com.arishi.AXAM.enums.ExamSchedulerStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,13 +8,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExamSchedular extends BaseEntity {
+public class ExamScheduler extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,10 +28,12 @@ public class ExamSchedular extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ExamSchedularStatus status;
+    private ExamSchedulerStatus status;
 
     @Column(nullable = false)
     private Instant startTime;
+
+    private LocalDate date;
 
     @Column(nullable = false)
     private Instant endTime;

@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface BluePrintDeteilRepository extends JpaRepository<BluePrintDeteil, Long> {
     List<BluePrintDeteil> findByBluePrintIdAndDeletedAtIsNull(long id);
+
+    //List<BluePrintDeteil> findByBluePrintId(long id);
 }

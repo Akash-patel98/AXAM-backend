@@ -16,7 +16,9 @@ public interface QuestionService {
 
     List<QuestionResponse> getQuestionsByCategory(String categoryTitle);
 
-    List<QuestionResponse> getQuestionsByCategoryAndDifficulty(
-            String categoryTitle,
-            DifficultyLevel difficultyLevel);
+    List<QuestionResponse> getQuestionsByCategoryAndDifficulty(String categoryTitle, DifficultyLevel difficultyLevel);
+
+    QuestionResponse updateQuestion(Long id, QuestionRequest request, MultipartFile image);
+
+    void deleteQuestionById(Long id);
 }

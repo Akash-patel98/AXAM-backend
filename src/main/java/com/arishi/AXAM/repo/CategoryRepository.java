@@ -15,7 +15,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByTitleIgnoreCaseAndDeletedAtIsNull(String title);
 
     Optional<Category> findByTitleIgnoreCaseAndDeletedAtIsNull(String title);
-    Optional<Category>findByIdAndDeletedAtIsNull(Long id);
 
-    List<Category> findByStatusAndDeletedAtIsNull(CategoryStatus status);;
+    Optional<Category> findByIdAndDeletedAtIsNull(Long id);
+
+    List<Category> findByStatusAndDeletedAtIsNull(CategoryStatus status);
+
+    boolean existsByTitleIgnoreCaseAndDeletedAtIsNullAndIdNot(String title, Long id);
 }

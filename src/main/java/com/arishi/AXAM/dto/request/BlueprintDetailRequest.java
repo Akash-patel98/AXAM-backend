@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class BlueprintDetailRequest {
 
     @NotNull(message = "Category is required")
-    private String  categoryTitle;
+    private String categoryTitle;
 
     @NotNull(message = "Difficulty level is required")
     private DifficultyLevel difficultyLevel;

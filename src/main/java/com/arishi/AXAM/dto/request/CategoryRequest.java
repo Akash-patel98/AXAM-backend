@@ -1,7 +1,6 @@
 package com.arishi.AXAM.dto.request;
 
 
-
 import com.arishi.AXAM.enums.CategoryStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

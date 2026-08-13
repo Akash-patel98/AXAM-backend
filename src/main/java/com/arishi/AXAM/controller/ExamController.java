@@ -3,6 +3,7 @@ package com.arishi.AXAM.controller;
 import com.arishi.AXAM.dto.ApiResponse;
 import com.arishi.AXAM.dto.request.ExamRequest;
 import com.arishi.AXAM.dto.responce.ExamResponse;
+import com.arishi.AXAM.dto.responce.ExamStartResponse;
 import com.arishi.AXAM.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,4 +46,5 @@ public class ExamController {
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam fetched successfully", response));
     }
+
 }

@@ -9,10 +9,12 @@ import com.arishi.AXAM.mapper.CategoryMapper;
 import com.arishi.AXAM.model.Category;
 import com.arishi.AXAM.repo.CategoryRepository;
 import com.arishi.AXAM.service.CategoryService;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,13 +65,37 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryResponse update(Long id, CategoryRequest request) {
-        return null;
+    public CategoryResponse updateCategory(Long id, CategoryRequest request) {
+
+        // Find category
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+
+        // Check duplicate title
+        boolean exists = categoryRepository.existsByTitleIgnoreCaseAndDeletedAtIsNullAndIdNot(request.getTitle(), id);
+
+        if (exists) {
+            throw new DuplicateResourceException("Category already exists: " + request.getTitle());
+        }
+
+        // Update
+        category.setTitle(request.getTitle());
+        category.setDescription(request.getDescription());
+
+        Category updatedCategory = categoryRepository.save(category);
+
+        return categoryMapper.toResponse(updatedCategory);
     }
 
     @Override
+    @Transactional
     public void deleteCategoryByID(Long id) {
 
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+
+        category.setDeletedAt(Instant.now());
+
+        categoryRepository.save(category);
     }
+
 
 }

@@ -16,7 +16,7 @@ import com.arishi.AXAM.repo.CategoryRepository;
 import com.arishi.AXAM.repo.QuestionRepository;
 import com.arishi.AXAM.service.BluePrintService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.List;
 
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class BluePrintServiceImpl implements BluePrintService {
 
     private final BluePrintRepository bluePrintRepository;

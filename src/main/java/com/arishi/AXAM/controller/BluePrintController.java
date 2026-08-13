@@ -22,7 +22,7 @@ public class BluePrintController {
     private final BluePrintService bluePrintService;
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<ApiResponse<BluePrintResponse>> createBlueprint(@Valid @RequestBody BlueprintRequest request) {
 
         BluePrintResponse response = bluePrintService.createBlueprint(request);
@@ -30,7 +30,7 @@ public class BluePrintController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(HttpStatus.CREATED.value(), "Blueprint created successfully", response));
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<BluePrintResponse>>> getAllBlueprints() {
 
         List<BluePrintResponse> response = bluePrintService.getAllBlueprints();
@@ -38,6 +38,8 @@ public class BluePrintController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Blueprints fetched successfully", response));
     }
 
+
+    // search by title
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<BluePrintResponse>> getBlueprintByTitle(@RequestParam String title) {
 

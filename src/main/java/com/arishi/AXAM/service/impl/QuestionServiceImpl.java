@@ -14,10 +14,12 @@ import com.arishi.AXAM.repo.QuestionRepository;
 import com.arishi.AXAM.service.QuestionService;
 import com.arishi.AXAM.service.FileStorageService;
 import com.arishi.AXAM.util.QuestionHelper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -119,5 +121,23 @@ public class QuestionServiceImpl implements QuestionService {
 
         return responses;
     }
+
+
+    @Override
+    @Transactional
+    public void deleteQuestionById(Long id) {
+
+        Question question = questionRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
+
+        question.setDeletedAt(Instant.now());
+
+        questionRepository.save(question);
+    }
+
+    @Override
+    public QuestionResponse updateQuestion(Long id, QuestionRequest request, MultipartFile image) {
+        return null;
+    }
+
 
 }
