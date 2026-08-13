@@ -17,4 +17,7 @@ public class ChangePasswordRequest {
     @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=]).*$", message = "Weak password")
     private String newPassword;
 
+    @NotBlank(message = "ConfirmPassword")
+    private String confirmPassword;
+
 }
