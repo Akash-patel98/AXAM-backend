@@ -34,11 +34,11 @@ public class UserController {
 
     // GET LOGGED-IN USER
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getLoggedInUser() {
+    public ResponseEntity<ApiResponse<UserResponse>> getLoggedInUser() {
 
         UserResponse response = userService.getLoggedInUser();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "profile feach successfully", response));
     }
 
 

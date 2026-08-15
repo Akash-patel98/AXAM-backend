@@ -18,7 +18,7 @@ public class UserMapper {
     }
 
     public UserResponse toResponse(Users user) {
-        return UserResponse.builder().id(user.getId()).firstName(user.getFirstName()).lastName(user.getLastName()).email(user.getEmail()).phoneNumber(user.getMobileNumber()).role(user.getRole() != null ? user.getRole().getName() : null).emailVerified(user.isEmailVerified()).status(user.getStatus().name()).build();
+        return UserResponse.builder().id(user.getId()).firstName(user.getFirstName()).lastName(user.getLastName()).email(user.getEmail()).mobileNumber(user.getMobileNumber()).role(user.getRole() != null ? user.getRole().getName() : null).emailVerified(user.isEmailVerified()).status(user.getStatus().name()).build();
     }
 
 }

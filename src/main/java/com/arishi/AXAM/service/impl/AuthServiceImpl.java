@@ -7,6 +7,7 @@ import com.arishi.AXAM.dto.responce.RegistrationResponse;
 import com.arishi.AXAM.dto.responce.TokenResponse;
 import com.arishi.AXAM.enums.UserStatus;
 import com.arishi.AXAM.exception.BadRequestException;
+import com.arishi.AXAM.exception.InvalidRefreshTokenException;
 import com.arishi.AXAM.exception.InvalidTokenException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.UserMapper;
@@ -129,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenIssuer.issue(user, null);
 
-        LoginResponse response = LoginResponse.builder().userId(user.getId()).email(user.getEmail()).role(user.getRole().getName()).build();
+        LoginResponse response = LoginResponse.builder().userId(user.getId()).email(user.getEmail()).role(user.getRole().getName()).fristName(user.getFirstName()).lastName(user.getLastName()).build();
 
         return LoginResult.builder().response(response).accessToken(accessToken).refreshToken(refreshToken).build();
 
@@ -230,6 +231,25 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse refreshToken(RefreshTokenRequest request) {
         return null;
+    }
+
+    @Override
+    @Transactional
+    public String refreshAccessToken(String refreshToken) {
+
+        RefreshToken token = refreshTokenRepository.findByTokenHash(refreshToken).orElseThrow(() -> new InvalidRefreshTokenException("Invalid refresh token"));
+
+        if (token.isRevoked()) {
+            throw new InvalidRefreshTokenException("Refresh token has been revoked");
+        }
+
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            throw new InvalidRefreshTokenException("Refresh token has expired");
+        }
+        Users user = token.getUser();
+
+        return jwtService.generateAccessToken(user);
+
     }
 
 }

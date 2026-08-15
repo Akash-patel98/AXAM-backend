@@ -29,6 +29,8 @@ public interface AuthService {
 
     TokenResponse refreshToken(RefreshTokenRequest request);
 
+    String refreshAccessToken(String refreshToken);
+
     //void logout(RefreshTokenRequest request);
 
 

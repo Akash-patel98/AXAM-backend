@@ -12,7 +12,7 @@ public final class ResponseCookieHelper {
 
 
     public static void attachRefreshTokenCookie(HttpServletResponse response, String rawRefreshToken) {
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", rawRefreshToken).httpOnly(true).secure(false).path("/api/auth").maxAge(Duration.ofDays(30)).sameSite("Strict").build();
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", rawRefreshToken).httpOnly(true).secure(false).path("/api/v1/auth").maxAge(Duration.ofDays(30)).sameSite("Strict").build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
@@ -23,6 +23,8 @@ public final class ResponseCookieHelper {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
+
+
 
 
 }

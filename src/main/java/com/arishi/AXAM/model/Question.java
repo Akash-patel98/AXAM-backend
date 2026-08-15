@@ -22,7 +22,7 @@ public class Question extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     @NotNull(message = "Category is required")
     private Category category;
@@ -37,7 +37,6 @@ public class Question extends BaseEntity{
     @NotBlank(message = "Option A is required")
     private String optionA;
 
-
     @NotBlank(message = "Option B is required")
     private String optionB;
 
@@ -46,9 +45,6 @@ public class Question extends BaseEntity{
 
     @NotBlank(message = "Option D is required")
     private String optionD;
-
-
-
 
     @NotNull(message = "Difficulty level is required")
 

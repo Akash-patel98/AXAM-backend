@@ -17,7 +17,7 @@ public class UserResponse {
 
     private String email;
 
-    private String phoneNumber;
+    private String mobileNumber;
 
     private String role;
 
