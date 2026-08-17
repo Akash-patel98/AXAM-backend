@@ -1,9 +1,9 @@
 package com.arishi.AXAM.service;
 
+import com.arishi.AXAM.dto.request.filter.CategoryFilterRequest;
 import com.arishi.AXAM.dto.request.CategoryRequest;
 import com.arishi.AXAM.dto.responce.CategoryResponse;
-
-import java.util.List;
+import com.arishi.AXAM.dto.responce.PageResponse;
 
 public interface CategoryService {
 
@@ -11,7 +11,8 @@ public interface CategoryService {
 
     CategoryResponse getCategoryByTitle(String title);
 
-    List<CategoryResponse> getAllCategory();
+
+    PageResponse<CategoryResponse> searchCategories(CategoryFilterRequest request);
 
     void deleteCategoryByID(Long id);
 

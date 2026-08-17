@@ -12,5 +12,7 @@ public interface ExamRepository extends JpaRepository<Exam , Long> {
 
     Optional<Exam> findByTitleIgnoreCaseAndDeletedAtIsNull(String title);
 
+    Optional<Exam> findByIdAndDeletedAtIsNull(Long id);
+
     List<Exam> findByDeletedAtIsNull();
 }

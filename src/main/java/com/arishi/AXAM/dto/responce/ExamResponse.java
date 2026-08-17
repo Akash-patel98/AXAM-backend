@@ -18,6 +18,10 @@ public class ExamResponse {
 
     private Float passingPercentage;
 
+    private Integer duration;
+
+    private com.arishi.AXAM.enums.ExamStatus status;
+
     private Long blueprintId;
 
     private String blueprintTitle;

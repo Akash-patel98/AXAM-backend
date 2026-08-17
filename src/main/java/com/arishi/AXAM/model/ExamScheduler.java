@@ -26,15 +26,24 @@ public class ExamScheduler extends BaseEntity {
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
 
+    @Column(nullable = false)
+    private String title;
+
+    private String description;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ExamSchedulerStatus status;
 
     @Column(nullable = false)
-    private Instant startTime;
-
-    private LocalDate date;
+    private Instant startDate;
 
     @Column(nullable = false)
-    private Instant endTime;
+    private Instant endDate;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer maxAttempts = 1;
+
+    private LocalDate date;
 }

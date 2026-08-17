@@ -34,4 +34,7 @@ public class ExamRequest {
     @DecimalMax(value = "100.0", message = "Passing percentage cannot be greater than 100")
     private Float passingPercentage;
 
+    @NotNull(message = "Duration is required")
+    @jakarta.validation.constraints.Positive(message = "Duration must be greater than 0")
+    private Integer duration;
 }

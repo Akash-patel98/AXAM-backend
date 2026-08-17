@@ -38,7 +38,6 @@ public class BluePrintController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Blueprints fetched successfully", response));
     }
 
-
     // search by title
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<BluePrintResponse>> getBlueprintByTitle(@RequestParam String title) {
@@ -46,5 +45,14 @@ public class BluePrintController {
         BluePrintResponse response = bluePrintService.getBlueprintByTitle(title);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Blueprint fetched successfully", response));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<BluePrintResponse>> updateStatus(@PathVariable Long id, @RequestParam com.arishi.AXAM.enums.BluePrintStatus status) {
+
+        BluePrintResponse response = bluePrintService.updateStatus(id, status);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Blueprint status updated successfully", response));
     }
 }

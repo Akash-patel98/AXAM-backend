@@ -3,10 +3,15 @@ package com.arishi.AXAM.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+import java.time.Instant;
+
+
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,10 +31,20 @@ public class AttemptQuestion extends BaseEntity {
     private Question question;
 
     @Column(nullable = false)
-    private Boolean answered;
-
-    @Column(nullable = false)
     private Integer displayOrder;
 
+    @Column(nullable = false)
+    private Boolean answered;
+
+    @Column(length = 1)
     private String selectedAnswer;
+
+    private Boolean isCorrect;
+
+    @Builder.Default
+    private Integer marksObtained = 0;
+
+    private Integer timeSpentInSeconds;
+
+    private Instant answeredAt;
 }

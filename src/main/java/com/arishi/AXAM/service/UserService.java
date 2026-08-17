@@ -14,7 +14,7 @@ public interface UserService {
 
     UserResponse getLoggedInUser();
 
-    UserResponse updateLoggedInUser( UpdateUserRequest request);
+    UserResponse updateLoggedInUser(UpdateUserRequest request);
 
     void changePassword(@Valid ChangePasswordRequest request);
 }

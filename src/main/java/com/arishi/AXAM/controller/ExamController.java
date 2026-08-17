@@ -31,7 +31,7 @@ public class ExamController {
     }
 
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<ExamResponse>>> getAllExams() {
 
         List<ExamResponse> response = examService.getAllExams();
@@ -45,6 +45,15 @@ public class ExamController {
         ExamResponse response = examService.getExamByTitle(title);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam fetched successfully", response));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<ExamResponse>> updateStatus(@PathVariable Long id, @RequestParam com.arishi.AXAM.enums.ExamStatus status) {
+
+        ExamResponse response = examService.updateStatus(id, status);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam status updated successfully", response));
     }
 
 }

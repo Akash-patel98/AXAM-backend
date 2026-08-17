@@ -13,4 +13,6 @@ public interface BluePrintRepository extends JpaRepository<BluePrint, Long> {
     List<BluePrint> findByDeletedAtIsNull();
 
     Optional<BluePrint> findByTitleIgnoreCaseAndDeletedAtIsNull(String title);
+
+    Optional<BluePrint> findByIdAndDeletedAtIsNull(Long id);
 }
