@@ -6,6 +6,7 @@ import com.arishi.AXAM.dto.responce.StartExamResponse;
 import com.arishi.AXAM.dto.responce.SubmitExamResponse;
 import com.arishi.AXAM.enums.ExamAttemptStatus;
 import com.arishi.AXAM.exception.*;
+import com.arishi.AXAM.mapper.ExamAttemptMapper;
 import com.arishi.AXAM.model.*;
 import com.arishi.AXAM.repo.*;
 import com.arishi.AXAM.service.ExamAttemptService;
@@ -38,6 +39,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final BluePrintDeteilRepository bluePrintDeteilRepository;
+    private final ExamAttemptMapper examAttemptMapper;
 
 
     // START EXAM
@@ -122,7 +124,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         List<AttemptQuestion> attemptQuestions = new ArrayList<>();
         for (int i = 0; i < allQuestions.size(); i++) {
             Question q = allQuestions.get(i);
-            AttemptQuestion aq = AttemptQuestion.builder().examAttempt(attempt).question(q).displayOrder(i + 1).answered(false).selectedAnswer(null).build();
+            AttemptQuestion aq = examAttemptMapper.toAttemptQuestion(attempt, q, i + 1);
             attemptQuestions.add(aq);
         }
         attemptQuestionRepository.saveAll(attemptQuestions);
@@ -134,7 +136,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         for (int i = 0; i < allQuestions.size(); i++) {
             Question question = allQuestions.get(i);
             int displayOrder = i + 1;
-            questionDTOs.add(StartExamResponse.ExamQuestionDTO.builder().id(question.getId()).displayOrder(displayOrder).questionContent(question.getQuestionContent()).optionA(question.getOptionA()).optionB(question.getOptionB()).optionC(question.getOptionC()).optionD(question.getOptionD()).difficultyLevel(question.getDifficultyLevel().toString()).imageUrl(question.getImageUrl()).build());
+            questionDTOs.add(examAttemptMapper.toExamQuestionDTO(question, displayOrder));
         }
 
         StartExamResponse response = StartExamResponse.builder().attemptId(attempt.getId()).activeSessionId(activeSessionId).totalQuestions(allQuestions.size()).duration(exam.getDuration()).startTime(startTime).endTime(endTime).questions(questionDTOs).build();
@@ -234,7 +236,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
 
         List<AttemptQuestion> attemptQuestions = attemptQuestionRepository.findByExamAttempt(attempt);
 
-        List<SubmitExamResponse.QuestionResultDTO> questionResults = attemptQuestions.stream().sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder())).map(aq -> SubmitExamResponse.QuestionResultDTO.builder().displayOrder(aq.getDisplayOrder()).questionContent(aq.getQuestion().getQuestionContent()).userAnswer(aq.getSelectedAnswer() != null ? aq.getSelectedAnswer() : "Not Answered").correctAnswer(aq.getQuestion().getCorrectAnswer()).isCorrect(aq.getIsCorrect()).marksObtained(aq.getMarksObtained()).difficultyLevel(aq.getQuestion().getDifficultyLevel().toString()).timeSpent(aq.getTimeSpentInSeconds() != null ? aq.getTimeSpentInSeconds().longValue() : null).build()).collect(Collectors.toList());
+        List<SubmitExamResponse.QuestionResultDTO> questionResults = attemptQuestions.stream().sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder())).map(examAttemptMapper::toQuestionResultDTO).collect(Collectors.toList());
 
         Float passingPercentage = attempt.getExam().getPassingPercentage();
         String result = (passingPercentage != null && attempt.getPercentage() >= passingPercentage) ? "PASSED" : "FAILED";
