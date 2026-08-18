@@ -26,8 +26,6 @@ public class EmailServiceImpl implements EmailService {
     public void sendVerificationEmail(String to, String verificationLink) {
 
         try {
-            log.info("Sending verification email to {}", to);
-
             MimeMessage message = mailSender.createMimeMessage();
 
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -41,11 +39,7 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(message);
 
-            log.info("verification email sent successfully to {}", to);
-
         } catch (Exception ex) {
-
-            log.error("Failed to send verification email to {}", to, ex);
 
             throw new RuntimeException("failed to send verification email", ex);
         }
@@ -56,9 +50,6 @@ public class EmailServiceImpl implements EmailService {
     public void sendResetPasswordMail(String email, String resetLink) {
 
         try {
-
-            log.info("Sending reset password email to {}", email);
-
             MimeMessage message = mailSender.createMimeMessage();
 
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -72,11 +63,7 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(message);
 
-            log.info("Reset password email sent successfully to {}", email);
-
         } catch (Exception ex) {
-
-            log.error("Failed to send reset password email to {}", email, ex);
 
             throw new RuntimeException("Failed to send reset password email", ex);
         }

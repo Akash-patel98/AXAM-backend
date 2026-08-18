@@ -22,7 +22,13 @@ public class ExamSchedulerResponse {
 
     private ExamSchedulerStatus status;
 
-    private Instant startTime;
+    private Instant startDate;
 
-    private Instant endTime;
+    private Instant endDate;
+
+    private String title;
+
+    private String description;
+
+    private Integer maxAttempts;
 }

@@ -31,6 +31,15 @@ public class Exam extends BaseEntity{
     @DecimalMax(value = "100.0")
     private Float passingPercentage;
 
+    @NotNull(message = "Duration is required")
+    @Positive(message = "Duration must be greater than 0")
+    @Column(nullable = false)
+    private Integer duration;  // exam duration in minutes
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private com.arishi.AXAM.enums.ExamStatus status;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blueprint_id", nullable = false)
     private BluePrint bluePrint;

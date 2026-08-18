@@ -10,6 +10,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity
 public class ExamAttempt extends BaseEntity {
 

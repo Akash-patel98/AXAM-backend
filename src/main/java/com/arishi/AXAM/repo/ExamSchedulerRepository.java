@@ -11,9 +11,9 @@ import java.util.Optional;
 @Repository
 public interface ExamSchedulerRepository extends JpaRepository<ExamScheduler, Long> {
 
-    boolean existsByExamIdAndStartTimeAndEndTime(Long examId, Instant startTime, Instant endTime);
+    boolean existsByExamIdAndStartDateAndEndDate(Long examId, Instant startDate, Instant endDate);
 
-    List<ExamScheduler> findAllByDeletedAtIsNullOrderByStartTimeAsc();
+    List<ExamScheduler> findAllByDeletedAtIsNullOrderByStartDateAsc();
 
     Optional<ExamScheduler> findByIdAndDeletedAtIsNull(Long id);
 }

@@ -2,33 +2,19 @@ package com.arishi.AXAM.service.impl;
 
 import com.arishi.AXAM.dto.request.ExamRequest;
 import com.arishi.AXAM.dto.responce.ExamResponse;
-
-import com.arishi.AXAM.dto.responce.ExamStartResponse;
-import com.arishi.AXAM.enums.BluePrintStatus;
-import com.arishi.AXAM.enums.ExamAttemptStatus;
-import com.arishi.AXAM.enums.ExamSchedulerStatus;
-import com.arishi.AXAM.enums.QuestionsStatus;
-import com.arishi.AXAM.exception.BadRequestException;
 import com.arishi.AXAM.exception.DuplicateResourceException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.ExamMapper;
-import com.arishi.AXAM.model.*;
-
-import com.arishi.AXAM.repo.*;
-
+import com.arishi.AXAM.model.BluePrint;
+import com.arishi.AXAM.model.Exam;
+import com.arishi.AXAM.repo.BluePrintRepository;
+import com.arishi.AXAM.repo.ExamRepository;
 import com.arishi.AXAM.service.ExamService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -38,23 +24,18 @@ public class ExamServiceImpl implements ExamService {
     private final BluePrintRepository bluePrintRepository;
     private final ExamMapper examMapper;
 
-    private final ExamSchedulerRepository examSchedulerRepository;
-    private final BluePrintDeteilRepository bluePrintDeteilRepository;
-    private final QuestionRepository questionRepository;
-    private final UserRepository usersRepository;
-
-
     @Override
     public ExamResponse createExam(ExamRequest request) {
 
+        // Check duplicate exam
         boolean exists = examRepository.existsByTitleIgnoreCaseAndDeletedAtIsNull(request.getTitle());
 
-        if (exists) {
-            throw new DuplicateResourceException("Exam already exists: " + request.getTitle());
-        }
+        if (exists) throw new DuplicateResourceException("Exam already exists: " + request.getTitle());
 
+        // Find blueprint
         BluePrint bluePrint = bluePrintRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getBlueprintTitle()).orElseThrow(() -> new ResourceNotFoundException("Blueprint not found: " + request.getBlueprintTitle()));
 
+        // Create exam
         Exam exam = examMapper.toEntity(request);
 
         exam.setBluePrint(bluePrint);
@@ -63,7 +44,6 @@ public class ExamServiceImpl implements ExamService {
 
         return examMapper.toResponse(savedExam);
     }
-
 
     @Override
     public List<ExamResponse> getAllExams() {
@@ -79,7 +59,6 @@ public class ExamServiceImpl implements ExamService {
         return responses;
     }
 
-
     @Override
     public ExamResponse getExamByTitle(String title) {
 
@@ -89,4 +68,38 @@ public class ExamServiceImpl implements ExamService {
     }
 
 
+    @Override
+    public ExamResponse updateStatus(Long id, com.arishi.AXAM.enums.ExamStatus newStatus) {
+
+        Exam exam = examRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
+
+        com.arishi.AXAM.enums.ExamStatus currentStatus = exam.getStatus();
+
+        // DRAFT -> ACTIVE or INACTIVE
+        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.DRAFT) {
+            if (newStatus != com.arishi.AXAM.enums.ExamStatus.ACTIVE && newStatus != com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
+                throw new com.arishi.AXAM.exception.BadRequestException("DRAFT exam can only be changed to ACTIVE or INACTIVE");
+            }
+        }
+
+        // ACTIVE -> INACTIVE only
+        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.ACTIVE) {
+            if (newStatus != com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
+                throw new com.arishi.AXAM.exception.BadRequestException("ACTIVE exam can only be changed to INACTIVE");
+            }
+        }
+
+        // INACTIVE -> ACTIVE only (re-enable)
+        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
+            if (newStatus != com.arishi.AXAM.enums.ExamStatus.ACTIVE) {
+                throw new com.arishi.AXAM.exception.BadRequestException("INACTIVE exam can only be changed to ACTIVE");
+            }
+        }
+
+        exam.setStatus(newStatus);
+
+        Exam savedExam = examRepository.save(exam);
+
+        return examMapper.toResponse(savedExam);
+    }
 }

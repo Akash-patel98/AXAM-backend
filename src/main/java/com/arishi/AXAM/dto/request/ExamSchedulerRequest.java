@@ -15,12 +15,20 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ExamSchedulerRequest {
 
-    @NotBlank(message = "Exam title is required")
-    private String examTitle;
+    @NotNull(message = "Exam ID is required")
+    private Long examId;
 
-    @NotNull(message = "Start time is required")
-    private Instant startTime;
+    @NotBlank(message = "Schedule title is required")
+    private String title;
 
-    @NotNull(message = "End time is required")
-    private Instant endTime;
+    private String description;
+
+    @NotNull(message = "Start date is required")
+    private Instant startDate;
+
+    @NotNull(message = "End date is required")
+    private Instant endDate;
+
+    @NotNull(message = "Max attempts is required")
+    private Integer maxAttempts;
 }

@@ -30,16 +30,16 @@ public class ExamSchedulerServiceImpl implements ExamSchedulerService {
     public ExamSchedulerResponse createScheduler(ExamSchedulerRequest request) {
 
         // Check exam available
-        Exam exam = examRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getExamTitle()).orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + request.getExamTitle()));
+        Exam exam = examRepository.findById(request.getExamId()).orElseThrow(() -> new ResourceNotFoundException("Exam not found with ID: " + request.getExamId()));
 
-        // check same exam schedul for given time
-        boolean exists = examSchedulerRepository.existsByExamIdAndStartTimeAndEndTime(exam.getId(), request.getStartTime(), request.getEndTime());
+        // check same exam schedule for given time
+        boolean exists = examSchedulerRepository.existsByExamIdAndStartDateAndEndDate(exam.getId(), request.getStartDate(), request.getEndDate());
 
         if (exists) throw new DuplicateResourceException("This exam is already scheduled for the given time");
 
-        // Check start time and end time
-        if (!request.getStartTime().isBefore(request.getEndTime()))
-            throw new BadRequestException("Start time must be before end time");
+        // Check start date and end date
+        if (!request.getStartDate().isBefore(request.getEndDate()))
+            throw new BadRequestException("Start date must be before end date");
 
         // Create scheduler
         ExamScheduler scheduler = examSchedulerMapper.toEntity(request);
@@ -56,7 +56,7 @@ public class ExamSchedulerServiceImpl implements ExamSchedulerService {
     @Override
     public List<ExamSchedulerResponse> getAllSchedulers() {
 
-        List<ExamScheduler> schedulers = examSchedulerRepository.findAllByDeletedAtIsNullOrderByStartTimeAsc();
+        List<ExamScheduler> schedulers = examSchedulerRepository.findAllByDeletedAtIsNullOrderByStartDateAsc();
 
         List<ExamSchedulerResponse> responses = new ArrayList<>();
 
@@ -91,7 +91,6 @@ public class ExamSchedulerServiceImpl implements ExamSchedulerService {
         if (currentStatus == ExamSchedulerStatus.COMPLETED) {
             throw new BadRequestException("Completed scheduler status cannot be changed");
         }
-
 
         // canceled status cannot change
         if (currentStatus == ExamSchedulerStatus.CANCELED) {

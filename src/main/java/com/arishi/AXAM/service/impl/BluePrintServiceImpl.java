@@ -3,6 +3,7 @@ package com.arishi.AXAM.service.impl;
 import com.arishi.AXAM.dto.request.BlueprintDetailRequest;
 import com.arishi.AXAM.dto.request.BlueprintRequest;
 import com.arishi.AXAM.dto.responce.BluePrintResponse;
+import com.arishi.AXAM.enums.BluePrintStatus;
 import com.arishi.AXAM.exception.BadRequestException;
 import com.arishi.AXAM.exception.DuplicateResourceException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
@@ -102,5 +103,42 @@ public class BluePrintServiceImpl implements BluePrintService {
         List<BluePrintDeteil> details = bluePrintDeteilRepository.findByBluePrintIdAndDeletedAtIsNull(bluePrint.getId());
 
         return bluePrintMapper.toResponse(bluePrint, details);
+    }
+
+    @Override
+    public BluePrintResponse updateStatus(Long id, com.arishi.AXAM.enums.BluePrintStatus newStatus) {
+
+        BluePrint bluePrint = bluePrintRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Blueprint not found: " + id));
+
+        BluePrintStatus currentStatus = bluePrint.getBluePrintStatus();
+
+        // DRAFT -> ACTIVE or INACTIVE
+        if (currentStatus == BluePrintStatus.DRAFT) {
+            if (newStatus != BluePrintStatus.ACTIVE && newStatus != BluePrintStatus.INACTIVE) {
+                throw new BadRequestException("DRAFT blueprint can only be changed to ACTIVE or INACTIVE");
+            }
+        }
+
+        // ACTIVE -> INACTIVE only
+        if (currentStatus == BluePrintStatus.ACTIVE) {
+            if (newStatus != BluePrintStatus.INACTIVE) {
+                throw new BadRequestException("ACTIVE blueprint can only be changed to INACTIVE");
+            }
+        }
+
+        // INACTIVE -> ACTIVE only (re-enable)
+        if (currentStatus == BluePrintStatus.INACTIVE) {
+            if (newStatus != BluePrintStatus.ACTIVE) {
+                throw new BadRequestException("INACTIVE blueprint can only be changed to ACTIVE");
+            }
+        }
+
+        bluePrint.setBluePrintStatus(newStatus);
+
+        BluePrint savedBlueprint = bluePrintRepository.save(bluePrint);
+
+        List<BluePrintDeteil> details = bluePrintDeteilRepository.findByBluePrintIdAndDeletedAtIsNull(savedBlueprint.getId());
+
+        return bluePrintMapper.toResponse(savedBlueprint, details);
     }
 }

@@ -1,8 +1,10 @@
 package com.arishi.AXAM.controller;
 
 import com.arishi.AXAM.dto.ApiResponse;
+import com.arishi.AXAM.dto.request.filter.CategoryFilterRequest;
 import com.arishi.AXAM.dto.request.CategoryRequest;
 import com.arishi.AXAM.dto.responce.CategoryResponse;
+import com.arishi.AXAM.dto.responce.PageResponse;
 import com.arishi.AXAM.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/category")
@@ -33,17 +33,16 @@ public class CategoryController {
 
 
     // GET ALL ACTIVE CATEGORIES
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategory() {
+    @PostMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<CategoryResponse>>> searchCategories(@RequestBody CategoryFilterRequest request) {
 
-        List<CategoryResponse> response = categoryService.getAllCategory();
+        PageResponse<CategoryResponse> response = categoryService.searchCategories(request);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Categories fetched successfully", response));
     }
 
     // GET CATEGORY BY TITLE
-    @GetMapping("/search")
+    @GetMapping("/title/{title}")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryByTitle(@PathVariable String title) {
 
         CategoryResponse response = categoryService.getCategoryByTitle(title);
