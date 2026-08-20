@@ -3,6 +3,7 @@ package com.arishi.AXAM.controller;
 import com.arishi.AXAM.dto.ApiResponse;
 import com.arishi.AXAM.dto.request.BlueprintRequest;
 import com.arishi.AXAM.dto.responce.BluePrintResponse;
+import com.arishi.AXAM.enums.BluePrintStatus;
 import com.arishi.AXAM.service.BluePrintService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class BluePrintController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<BluePrintResponse>> updateStatus(@PathVariable Long id, @RequestParam com.arishi.AXAM.enums.BluePrintStatus status) {
+    public ResponseEntity<ApiResponse<BluePrintResponse>> updateStatus(@PathVariable Long id, @RequestParam BluePrintStatus status) {
 
         BluePrintResponse response = bluePrintService.updateStatus(id, status);
 

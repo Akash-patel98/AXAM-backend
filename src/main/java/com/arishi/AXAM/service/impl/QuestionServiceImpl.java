@@ -53,6 +53,9 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional
     public QuestionResponse createQuestion(QuestionRequest request, MultipartFile image) {
 
+        if (request.getCategory() == null || request.getCategory().isBlank()) {
+            throw new BadRequestException("Category is required");
+        }
         Category category = categoryRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getCategory()).orElseThrow(() -> new ResourceNotFoundException("Category not found or deleted"));
 
         //dubliate  checks

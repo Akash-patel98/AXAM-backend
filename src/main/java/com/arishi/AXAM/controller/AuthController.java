@@ -83,4 +83,12 @@ public class AuthController {
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Access token refreshed successfully"));
     }
+
+    @PostMapping("/resendverification")
+    public ResponseEntity<ApiResponse<String>> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+
+        authService.resendVerification(request);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Verification email sent successfully"));
+    }
 }

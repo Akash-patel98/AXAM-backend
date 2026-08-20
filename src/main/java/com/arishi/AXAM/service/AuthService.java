@@ -8,6 +8,7 @@ import com.arishi.AXAM.dto.responce.TokenResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 public interface AuthService {
 
@@ -27,11 +28,8 @@ public interface AuthService {
 
     void changePassword(ChangePasswordRequest request);
 
-    TokenResponse refreshToken(RefreshTokenRequest request);
-
     String refreshAccessToken(String refreshToken);
 
-    //void logout(RefreshTokenRequest request);
-
+    void resendVerification(@Valid ResendVerificationRequest request);
 
 }

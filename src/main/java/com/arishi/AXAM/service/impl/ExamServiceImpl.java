@@ -2,6 +2,8 @@ package com.arishi.AXAM.service.impl;
 
 import com.arishi.AXAM.dto.request.ExamRequest;
 import com.arishi.AXAM.dto.responce.ExamResponse;
+import com.arishi.AXAM.enums.ExamStatus;
+import com.arishi.AXAM.exception.BadRequestException;
 import com.arishi.AXAM.exception.DuplicateResourceException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.ExamMapper;
@@ -69,30 +71,30 @@ public class ExamServiceImpl implements ExamService {
 
 
     @Override
-    public ExamResponse updateStatus(Long id, com.arishi.AXAM.enums.ExamStatus newStatus) {
+    public ExamResponse updateStatus(Long id, ExamStatus newStatus) {
 
         Exam exam = examRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
 
-        com.arishi.AXAM.enums.ExamStatus currentStatus = exam.getStatus();
+        ExamStatus currentStatus = exam.getStatus();
 
         // DRAFT -> ACTIVE or INACTIVE
-        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.DRAFT) {
-            if (newStatus != com.arishi.AXAM.enums.ExamStatus.ACTIVE && newStatus != com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
-                throw new com.arishi.AXAM.exception.BadRequestException("DRAFT exam can only be changed to ACTIVE or INACTIVE");
+        if (currentStatus == ExamStatus.DRAFT) {
+            if (newStatus != ExamStatus.ACTIVE && newStatus != ExamStatus.INACTIVE) {
+                throw new BadRequestException("DRAFT exam can only be changed to ACTIVE or INACTIVE");
             }
         }
 
         // ACTIVE -> INACTIVE only
-        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.ACTIVE) {
-            if (newStatus != com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
-                throw new com.arishi.AXAM.exception.BadRequestException("ACTIVE exam can only be changed to INACTIVE");
+        if (currentStatus == ExamStatus.ACTIVE) {
+            if (newStatus != ExamStatus.INACTIVE) {
+                throw new BadRequestException("ACTIVE exam can only be changed to INACTIVE");
             }
         }
 
         // INACTIVE -> ACTIVE only (re-enable)
-        if (currentStatus == com.arishi.AXAM.enums.ExamStatus.INACTIVE) {
-            if (newStatus != com.arishi.AXAM.enums.ExamStatus.ACTIVE) {
-                throw new com.arishi.AXAM.exception.BadRequestException("INACTIVE exam can only be changed to ACTIVE");
+        if (currentStatus == ExamStatus.INACTIVE) {
+            if (newStatus != ExamStatus.ACTIVE) {
+                throw new BadRequestException("INACTIVE exam can only be changed to ACTIVE");
             }
         }
 

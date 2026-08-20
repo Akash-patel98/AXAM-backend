@@ -23,14 +23,14 @@ public class EmailServiceImpl implements EmailService {
 
     @Async
     @Override
-    public void sendVerificationEmail(String to, String verificationLink) {
+    public void sendVerificationEmail(String to, String firstName, String verificationLink) {
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
 
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            String html = EmailTemplateUtil.verificationEmail("User", verificationLink);
+            String html = EmailTemplateUtil.verificationEmail(firstName, verificationLink);
 
             helper.setFrom(fromEmail);
             helper.setTo(to);
@@ -47,14 +47,14 @@ public class EmailServiceImpl implements EmailService {
 
     @Async
     @Override
-    public void sendResetPasswordMail(String email, String resetLink) {
+    public void sendResetPasswordMail(String email, String firstName, String resetLink) {
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
 
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            String html = EmailTemplateUtil.resetPasswordEmail("User", resetLink);
+            String html = EmailTemplateUtil.resetPasswordEmail(firstName, resetLink);
 
             helper.setFrom(fromEmail);
             helper.setTo(email);

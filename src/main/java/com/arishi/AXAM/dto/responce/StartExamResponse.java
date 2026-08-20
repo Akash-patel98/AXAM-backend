@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,13 +15,13 @@ import java.util.List;
 @AllArgsConstructor
 public class StartExamResponse {
 
-    private Long attemptId;                    // Exam attempt record ID
-    private String activeSessionId;            // UUID for session tracking
-    private Integer totalQuestions;            // Total questions in exam
-    private Integer duration;                  // Exam duration in minutes
-    private LocalDateTime startTime;           // When exam started
-    private LocalDateTime endTime;             // When exam expires (startTime + duration)
-    private List<ExamQuestionDTO> questions;   // 50 questions without correct answer
+    private Long attemptId;
+    private String activeSessionId;
+    private Integer totalQuestions;
+    private Integer duration;
+    private Instant startTime;
+    private Instant endTime;
+    private List<ExamQuestionDTO> questions;
 
     @Data
     @Builder

@@ -44,6 +44,9 @@ public class AttemptQuestion extends BaseEntity {
     @Builder.Default
     private Integer marksObtained = 0;
 
+    @Column(name = "assigned_marks", nullable = false)
+    private Integer assignedMarks;
+
     private Integer timeSpentInSeconds;
 
     private Instant answeredAt;

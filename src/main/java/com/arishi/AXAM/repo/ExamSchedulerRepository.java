@@ -1,5 +1,6 @@
 package com.arishi.AXAM.repo;
 
+import com.arishi.AXAM.enums.ExamSchedulerStatus;
 import com.arishi.AXAM.model.ExamScheduler;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,4 +17,6 @@ public interface ExamSchedulerRepository extends JpaRepository<ExamScheduler, Lo
     List<ExamScheduler> findAllByDeletedAtIsNullOrderByStartDateAsc();
 
     Optional<ExamScheduler> findByIdAndDeletedAtIsNull(Long id);
+
+    List<ExamScheduler> findByStatusAndEndDateLessThanEqual(ExamSchedulerStatus examSchedulerStatus, Instant now);
 }

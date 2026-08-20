@@ -106,7 +106,7 @@ public class BluePrintServiceImpl implements BluePrintService {
     }
 
     @Override
-    public BluePrintResponse updateStatus(Long id, com.arishi.AXAM.enums.BluePrintStatus newStatus) {
+    public BluePrintResponse updateStatus(Long id, BluePrintStatus newStatus) {
 
         BluePrint bluePrint = bluePrintRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Blueprint not found: " + id));
 
