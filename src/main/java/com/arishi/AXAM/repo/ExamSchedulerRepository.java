@@ -19,4 +19,6 @@ public interface ExamSchedulerRepository extends JpaRepository<ExamScheduler, Lo
     Optional<ExamScheduler> findByIdAndDeletedAtIsNull(Long id);
 
     List<ExamScheduler> findByStatusAndEndDateLessThanEqual(ExamSchedulerStatus examSchedulerStatus, Instant now);
+
+    List<ExamScheduler> findByExam_IdAndStatusAndDeletedAtIsNull(long id, ExamSchedulerStatus examSchedulerStatus);
 }

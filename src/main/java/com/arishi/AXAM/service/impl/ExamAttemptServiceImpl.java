@@ -22,6 +22,7 @@ import com.arishi.AXAM.model.BluePrintDeteil;
 import com.arishi.AXAM.model.Exam;
 import com.arishi.AXAM.model.ExamAttempt;
 import com.arishi.AXAM.model.ExamScheduler;
+import com.arishi.AXAM.model.Marks;
 import com.arishi.AXAM.model.Question;
 import com.arishi.AXAM.model.Users;
 import com.arishi.AXAM.repo.AttemptQuestionRepository;
@@ -29,10 +30,10 @@ import com.arishi.AXAM.repo.BluePrintDeteilRepository;
 import com.arishi.AXAM.repo.ExamAttemptRepository;
 import com.arishi.AXAM.repo.ExamRepository;
 import com.arishi.AXAM.repo.ExamSchedulerRepository;
+import com.arishi.AXAM.repo.MarksRepository;
 import com.arishi.AXAM.repo.QuestionRepository;
 import com.arishi.AXAM.repo.UserRepository;
 import com.arishi.AXAM.service.ExamAttemptService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -62,6 +63,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final BluePrintDeteilRepository bluePrintDeteilRepository;
+    private final MarksRepository marksRepository; // NEW
     private final ExamAttemptMapper examAttemptMapper;
 
 
@@ -97,7 +99,6 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         if (now.isBefore(scheduler.getStartDate()) || !now.isBefore(scheduler.getEndDate())) {
 
             if (!now.isBefore(scheduler.getEndDate()) && scheduler.getStatus() == ExamSchedulerStatus.ACTIVE) {
-
                 scheduler.setStatus(ExamSchedulerStatus.COMPLETED);
                 examSchedulerRepository.save(scheduler);
             }
@@ -126,7 +127,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
             if (!now.isBefore(expiryTime)) {
 
                 activeExam.setStatus(ExamAttemptStatus.AUTO_SUBMITTED);
-                activeExam.setEndAt(now);
+                activeExam.setEndAt(expiryTime);
                 activeExam.setActiveSessionId(null);
 
                 calculateAndUpdateResults(activeExam);
@@ -161,10 +162,41 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         // Shuffle questions for randomization
         Collections.shuffle(allQuestions);
 
+        // NEW: resolve marks-per-question (by exam + question difficulty) BEFORE creating the attempt,
+        // so totalMarks reflects the real weighted total, not just a question count.
+        List<Integer> resolvedMarks = new ArrayList<>();
+        int totalMarksForAttempt = 0;
+
+        for (Question q : allQuestions) {
+            int marksForThisQuestion = marksRepository
+                    .findByExamIdAndDifficultyLevel(exam.getId(), q.getDifficultyLevel())
+                    .map(Marks::getMarks)
+                    .orElse(1); // fallback if admin never configured marks for this difficulty on this exam
+
+            resolvedMarks.add(marksForThisQuestion);
+            totalMarksForAttempt += marksForThisQuestion;
+        }
+
         // create exan attem record
         String activeSessionId = UUID.randomUUID().toString();
 
-        ExamAttempt attempt = ExamAttempt.builder().exam(exam).scheduler(scheduler).user(user).startAt(now).status(ExamAttemptStatus.IN_PROGRESS).activeSessionId(activeSessionId).lastActivityAt(now).totalQuestions(allQuestions.size()).attemptedQuestions(0).unattemptedQuestions(allQuestions.size()).correctAnswers(0).incorrectAnswers(0).obtainedMarks(0).totalMarks(allQuestions.size()).percentage(0.0f).build();
+        ExamAttempt attempt = ExamAttempt.builder()
+                .exam(exam)
+                .scheduler(scheduler)
+                .user(user)
+                .startAt(now)
+                .status(ExamAttemptStatus.IN_PROGRESS)
+                .activeSessionId(activeSessionId)
+                .lastActivityAt(now)
+                .totalQuestions(allQuestions.size())
+                .attemptedQuestions(0)
+                .unattemptedQuestions(allQuestions.size())
+                .correctAnswers(0)
+                .incorrectAnswers(0)
+                .obtainedMarks(0)
+                .totalMarks(totalMarksForAttempt) // CHANGED: was allQuestions.size()
+                .percentage(0.0f)
+                .build();
 
         attempt = examAttemptRepository.save(attempt);
 
@@ -175,7 +207,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
 
             Question q = allQuestions.get(i);
 
-            AttemptQuestion aq = examAttemptMapper.toAttemptQuestion(attempt, q, i + 1);
+            AttemptQuestion aq = examAttemptMapper.toAttemptQuestion(attempt, q, i + 1, resolvedMarks.get(i)); // CHANGED
 
             attemptQuestions.add(aq);
         }
@@ -201,7 +233,15 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
             questionDTOs.add(examAttemptMapper.toExamQuestionDTO(question, displayOrder));
         }
 
-        StartExamResponse response = StartExamResponse.builder().attemptId(attempt.getId()).activeSessionId(activeSessionId).totalQuestions(allQuestions.size()).duration((int) ChronoUnit.MINUTES.between(startTime, endTime)).startTime(startTime).endTime(endTime).questions(questionDTOs).build();
+        StartExamResponse response = StartExamResponse.builder()
+                .attemptId(attempt.getId())
+                .activeSessionId(activeSessionId)
+                .totalQuestions(allQuestions.size())
+                .duration((int) ChronoUnit.MINUTES.between(startTime, endTime))
+                .startTime(startTime)
+                .endTime(endTime)
+                .questions(questionDTOs)
+                .build();
 
         return response;
     }
@@ -216,10 +256,26 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
 
         for (BluePrintDeteil detail : details) {
 
-            List<Question> questions = questionRepository.findAllByCategoryIdAndDifficultyLevelAndDeletedAtIsNull(detail.getCategory().getId(), detail.getDifficultyLevel()).stream().limit(detail.getQuestionCount()).collect(Collectors.toList());
+            List<Question> questions = questionRepository.findAllByCategoryIdAndDifficultyLevelAndDeletedAtIsNull(detail.getCategory().getId(), detail.getDifficultyLevel());
 
-            allQuestions.addAll(questions);
+            int requiredCount = detail.getQuestionCount();
+
+            // Check enough questions are available
+            if (questions.size() < requiredCount) {
+                throw new BadRequestException(String.format("Not enough questions available for category '%s' and difficulty '%s'. Required: %d, Available: %d", detail.getCategory().getTitle(), detail.getDifficultyLevel(), requiredCount, questions.size()));
+            }
+
+            // Randomize questions
+            Collections.shuffle(questions);
+
+            // Select questions according to blueprint count
+            List<Question> selectedQuestions = questions.stream().limit(requiredCount).collect(Collectors.toList());
+
+            allQuestions.addAll(selectedQuestions);
         }
+
+        // Randomize final question order
+        Collections.shuffle(allQuestions);
 
         return allQuestions;
     }
@@ -234,7 +290,6 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         ExamAttempt attempt = validateSessionAndGetAttempt(attemptId, sessionId, userId);
 
         if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS) {
-
             throw new ExamNotActiveException("Exam is no longer active. Cannot submit answers.");
         }
 
@@ -250,7 +305,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         if (!now.isBefore(expiryTime)) {
 
             attempt.setStatus(ExamAttemptStatus.AUTO_SUBMITTED);
-            attempt.setEndAt(now);
+            attempt.setEndAt(expiryTime);
             attempt.setActiveSessionId(null);
 
             calculateAndUpdateResults(attempt);
@@ -276,7 +331,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
             boolean isCorrect = aq.getQuestion().getCorrectAnswer().equals(answer);
 
             aq.setIsCorrect(isCorrect);
-            aq.setMarksObtained(isCorrect ? 1 : 0);
+            aq.setMarksObtained(isCorrect ? aq.getAssignedMarks() : 0); // CHANGED: was isCorrect ? 1 : 0
 
         } else {
 
@@ -288,7 +343,6 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
 
         // Record time spent
         if (request.getTimeSpentInSeconds() != null) {
-
             aq.setTimeSpentInSeconds(request.getTimeSpentInSeconds().intValue());
         }
 
@@ -312,7 +366,6 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         ExamAttempt attempt = validateSessionAndGetAttempt(attemptId, sessionId, userId);
 
         if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS) {
-
             throw new ExamNotActiveException("Exam already submitted or abandoned");
         }
 
@@ -373,7 +426,9 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
 
         int obtainedMarks = attemptQuestions.stream().mapToInt(aq -> aq.getMarksObtained() != null ? aq.getMarksObtained() : 0).sum();
 
-        float percentage = totalQuestions > 0 ? (obtainedMarks * 100.0f) / totalQuestions : 0f;
+        int totalMarks = attemptQuestions.stream().mapToInt(AttemptQuestion::getAssignedMarks).sum(); // CHANGED: was totalQuestions
+
+        float percentage = totalMarks > 0 ? (obtainedMarks * 100.0f) / totalMarks : 0f; // CHANGED: was divided by totalQuestions
 
         attempt.setTotalQuestions(totalQuestions);
         attempt.setAttemptedQuestions(attemptedQuestions);
@@ -381,7 +436,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         attempt.setCorrectAnswers(correctAnswers);
         attempt.setIncorrectAnswers(incorrectAnswers);
         attempt.setObtainedMarks(obtainedMarks);
-        attempt.setTotalMarks(totalQuestions);
+        attempt.setTotalMarks(totalMarks); // CHANGED: was totalQuestions
         attempt.setPercentage(percentage);
 
         examAttemptRepository.save(attempt);
@@ -394,12 +449,10 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         ExamAttempt attempt = examAttemptRepository.findById(attemptId).orElseThrow(() -> new ResourceNotFoundException("Exam attempt not found: " + attemptId));
 
         if (!attempt.getUser().getId().equals(userId)) {
-
             throw new BadRequestException("Unauthorized access to this exam attempt");
         }
 
         if (attempt.getActiveSessionId() == null || !attempt.getActiveSessionId().equals(sessionId)) {
-
             throw new InvalidSessionException("Session mismatch - Possible exam hijacking detected!");
         }
 
@@ -416,9 +469,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         ExamAttempt attempt = validateSessionAndGetAttempt(attemptId, sessionId, userId);
 
         attempt.setStatus(ExamAttemptStatus.AUTO_SUBMITTED);
-
         attempt.setEndAt(Instant.now());
-
         attempt.setActiveSessionId(null);
 
         examAttemptRepository.save(attempt);
@@ -443,28 +494,39 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
     }
 
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void autoCompleteExpiredSchedulers() {
 
         Instant now = Instant.now();
 
-        List<ExamScheduler> schedulers = examSchedulerRepository.findByStatusAndEndDateLessThanEqual(ExamSchedulerStatus.ACTIVE, now);
+        List<ExamAttempt> activeAttempts = examAttemptRepository.findByStatus(ExamAttemptStatus.IN_PROGRESS);
 
-        for (ExamScheduler scheduler : schedulers) {
+        for (ExamAttempt attempt : activeAttempts) {
 
-            List<ExamAttempt> activeAttempts = examAttemptRepository.findBySchedulerIdAndStatus(scheduler.getId(), ExamAttemptStatus.IN_PROGRESS);
+            Instant examDurationEnd = attempt.getStartAt().plus(attempt.getExam().getDuration(), ChronoUnit.MINUTES);
 
-            for (ExamAttempt attempt : activeAttempts) {
+            Instant schedulerEnd = attempt.getScheduler().getEndDate();
+
+            Instant expiryTime = examDurationEnd.isBefore(schedulerEnd) ? examDurationEnd : schedulerEnd;
+
+            if (!now.isBefore(expiryTime)) {
 
                 attempt.setStatus(ExamAttemptStatus.AUTO_SUBMITTED);
-                attempt.setEndAt(now);
+                attempt.setEndAt(expiryTime);
                 attempt.setActiveSessionId(null);
 
                 calculateAndUpdateResults(attempt);
 
                 examAttemptRepository.save(attempt);
+
+                updateSchedulerStatus(attempt.getScheduler(), now);
             }
+        }
+
+        List<ExamScheduler> schedulers = examSchedulerRepository.findByStatusAndEndDateLessThanEqual(ExamSchedulerStatus.ACTIVE, now);
+
+        for (ExamScheduler scheduler : schedulers) {
 
             scheduler.setStatus(ExamSchedulerStatus.COMPLETED);
 

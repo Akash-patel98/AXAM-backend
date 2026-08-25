@@ -25,7 +25,7 @@ public class ExamAttemptController {
 
     private final ExamAttemptService examAttemptService;
 
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'ADMIN')")
     @PostMapping("/start")
     public ResponseEntity<ApiResponse<StartExamResponse>> startExamAttempt(@Valid @RequestBody StartAttemptRequest request) {
 
@@ -34,7 +34,7 @@ public class ExamAttemptController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam started successfully", response));
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'ADMIN')")
     @PostMapping("/{attemptId}/answer")
     public ResponseEntity<ApiResponse<Void>> submitAnswer(@PathVariable Long attemptId, @Valid @RequestBody AnswerRequest request, @RequestHeader("X-Session-ID") String sessionId) {
 
@@ -44,33 +44,26 @@ public class ExamAttemptController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Answer submitted successfully"));
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'ADMIN')")
     @PostMapping("/{attemptId}/submit")
     public ResponseEntity<ApiResponse<SubmitExamResponse>> submitExam(@PathVariable Long attemptId, @RequestHeader("X-Session-ID") String sessionId) {
 
         Long userId = getCurrentUserId();
-        log.info("User {} submitting exam attempt {}", userId, attemptId);
-
         SubmitExamResponse response = examAttemptService.submitExam(attemptId, sessionId, userId);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam submitted successfully", response));
     }
 
 
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CANDIDATE', 'ADMIN')")
     @PostMapping("/{attemptId}/abandon")
     public ResponseEntity<ApiResponse<Void>> abandonExam(@PathVariable Long attemptId, @RequestHeader("X-Session-ID") String sessionId) {
 
         Long userId = getCurrentUserId();
-        log.warn("User {} abandoning exam attempt {}", userId, attemptId);
-
         examAttemptService.abandonExam(attemptId, sessionId, userId);
-
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam abandoned"));
     }
 
-
-    //GET CURRENT USER ID FROM JWT TOKEN
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

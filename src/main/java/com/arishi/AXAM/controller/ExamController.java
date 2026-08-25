@@ -4,6 +4,7 @@ import com.arishi.AXAM.dto.ApiResponse;
 import com.arishi.AXAM.dto.request.ExamRequest;
 import com.arishi.AXAM.dto.responce.ExamResponse;
 import com.arishi.AXAM.dto.responce.ExamStartResponse;
+import com.arishi.AXAM.enums.ExamStatus;
 import com.arishi.AXAM.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class ExamController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<ExamResponse>> updateStatus(@PathVariable Long id, @RequestParam com.arishi.AXAM.enums.ExamStatus status) {
+    public ResponseEntity<ApiResponse<ExamResponse>> updateStatus(@PathVariable Long id, @RequestParam ExamStatus status) {
 
         ExamResponse response = examService.updateStatus(id, status);
 

@@ -65,6 +65,14 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Password reset link sent"));
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+
+        authService.resetPassword(request);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Password reset successfully"));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
 

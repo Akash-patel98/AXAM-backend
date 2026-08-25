@@ -56,18 +56,23 @@ public class QuestionServiceImpl implements QuestionService {
         if (request.getCategory() == null || request.getCategory().isBlank()) {
             throw new BadRequestException("Category is required");
         }
+
         Category category = categoryRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getCategory()).orElseThrow(() -> new ResourceNotFoundException("Category not found or deleted"));
 
-        //dubliate  checks
+        // Duplicate check
         boolean exists = questionRepository.existsByQuestionContentIgnoreCaseAndCategoryIdAndDeletedAtIsNull(request.getQuestionContent(), category.getId());
-        if (exists) {
+
+        //duplicate  and admin not override
+        if (exists && !Boolean.TRUE.equals(request.getOverride())) {
             throw new DuplicateResourceException("A similar question already exists in this category");
         }
 
+        // validate options
         if (!QuestionHelper.isOptionsUnique(request.getOptionA(), request.getOptionB(), request.getOptionC(), request.getOptionD())) {
             throw new BadRequestException("Options must be unique. Duplicate options found.");
         }
 
+        // Create new question
         Question question = questionMapper.toEntity(request);
         question.setCategory(category);
 
@@ -77,12 +82,16 @@ public class QuestionServiceImpl implements QuestionService {
         }
 
         Question saved = questionRepository.save(question);
+
         return questionMapper.toResponse(saved);
     }
 
     @Override
     public PageResponse<QuestionResponse> searchQuestions(QuestionFilterRequest request) {
-        Specification<Question> specification = Specification.where(QuestionSpecification.isNotDeleted()).and(QuestionSpecification.hasCategory(request.getCategory())).and(QuestionSpecification.hasDifficultyLevel(request.getDifficultyLevel()));
+        Specification<Question> specification = Specification
+                .where(QuestionSpecification.isNotDeleted())
+                .and(QuestionSpecification.hasCategory(request.getCategory()))
+                .and(QuestionSpecification.hasDifficultyLevel(request.getDifficultyLevel()));
 
         Sort sort = request.getSortDir().equalsIgnoreCase("asc") ? Sort.by(request.getSortBy()).ascending() : Sort.by(request.getSortBy()).descending();
 
@@ -102,11 +111,11 @@ public class QuestionServiceImpl implements QuestionService {
         // Validate category
         Category category = categoryRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getCategory()).orElseThrow(() -> new ResourceNotFoundException("Category not found or deleted"));
 
-        // Duplicate check: if question content changed, ensure no duplicate in same category
+        // Duplicate check
         if (!question.getQuestionContent().equalsIgnoreCase(request.getQuestionContent())) {
             boolean exists = questionRepository.existsByQuestionContentIgnoreCaseAndCategoryIdAndDeletedAtIsNull(request.getQuestionContent(), category.getId());
             if (exists) {
-                throw new DuplicateResourceException("A question with this content already exists in the category");
+                throw new DuplicateResourceException("A question is already exists");
             }
         }
 

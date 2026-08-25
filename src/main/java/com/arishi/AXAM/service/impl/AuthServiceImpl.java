@@ -109,7 +109,6 @@ public class AuthServiceImpl implements AuthService {
         // Send email
         emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), verificationLink);
 
-
         return RegistrationResponse.builder().userId(user.getId()).email(user.getEmail()).message("Verification email sent").build();
     }
 
@@ -232,21 +231,45 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken resetToken = passwordResetRepository.findByTokenHash(hashUtil.sha256(request.getToken())).orElseThrow(() -> new InvalidTokenException("Invalid reset token"));
 
-        if (resetToken.isUsed()) throw new InvalidTokenException("Reset token already used");
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
 
-        if (resetToken.getExpiresAt().isBefore(Instant.now())) throw new InvalidTokenException("Reset token expired");
+            throw new BadRequestException("Passwords do not match");
+        }
+
+        String tokenHash = hashUtil.sha256(request.getToken());
+
+        PasswordResetToken resetToken = passwordResetRepository.findByTokenHash(tokenHash).orElseThrow(() -> new InvalidTokenException("Invalid reset token"));
+
+        if (resetToken.isUsed()) {
+
+            throw new InvalidTokenException("Reset token already used");
+        }
+
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+
+            throw new InvalidTokenException("Reset token expired");
+        }
 
         Users user = resetToken.getUser();
+
+        if (user == null || user.getDeletedAt() != null) {
+
+            throw new InvalidTokenException("Invalid reset token");
+        }
+
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+
         userRepository.save(user);
 
+        //Make reset token single-use.
         resetToken.setUsed(true);
-        passwordResetRepository.save(resetToken);
 
+        passwordResetRepository.save(resetToken);
         List<RefreshToken> tokens = refreshTokenRepository.findByUser(user);
-        tokens.forEach(t -> t.setRevoked(true));
+
+        tokens.forEach(token -> token.setRevoked(true));
+
         refreshTokenRepository.saveAll(tokens);
     }
 

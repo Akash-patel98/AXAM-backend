@@ -19,4 +19,7 @@ public class ResetPasswordRequest {
     @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=]).*$", message = "Weak password")
     private String newPassword;
 
+    @NotBlank(message = "Confirm password is required")
+    private String confirmPassword;
+
 }

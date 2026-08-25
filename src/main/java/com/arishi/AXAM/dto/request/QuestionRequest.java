@@ -42,6 +42,9 @@ public class QuestionRequest {
     private DifficultyLevel difficultyLevel;
 
 
+    private Boolean override = false;
+
+
     @Pattern(regexp = "[ABCD]", message = "correct answer must be A,B,C,D")
     private String correctAnswer;
 

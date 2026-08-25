@@ -25,4 +25,8 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
     int countByUserIdAndSchedulerId(Long userId, Long schedulerId);
 
     List<ExamAttempt> findBySchedulerIdAndStatus(long id, ExamAttemptStatus examAttemptStatus);
+
+    List<ExamAttempt> findByUserEmailAndDeletedAtIsNull(String email);
+
+    List<ExamAttempt> findByStatus(ExamAttemptStatus examAttemptStatus);
 }
