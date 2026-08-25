@@ -10,11 +10,13 @@ import com.arishi.AXAM.mapper.ExamMapper;
 import com.arishi.AXAM.model.BluePrint;
 import com.arishi.AXAM.model.Exam;
 import com.arishi.AXAM.repo.BluePrintRepository;
+import com.arishi.AXAM.repo.ExamAttemptRepository;
 import com.arishi.AXAM.repo.ExamRepository;
 import com.arishi.AXAM.service.ExamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +27,7 @@ public class ExamServiceImpl implements ExamService {
     private final ExamRepository examRepository;
     private final BluePrintRepository bluePrintRepository;
     private final ExamMapper examMapper;
+    private final ExamAttemptRepository examAttemptRepository;
 
     @Override
     public ExamResponse createExam(ExamRequest request) {
@@ -103,5 +106,47 @@ public class ExamServiceImpl implements ExamService {
         Exam savedExam = examRepository.save(exam);
 
         return examMapper.toResponse(savedExam);
+    }
+
+    @Override
+    public ExamResponse updateExam(Long id, ExamRequest request) {
+
+        Exam exam = examRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
+
+
+        if (examAttemptRepository.existsByExamId(id)) {
+            throw new BadRequestException("Cannot edit an exam that already has candidate attempts");
+        }
+
+        if (!exam.getTitle().equalsIgnoreCase(request.getTitle())) {
+            boolean titleTaken = examRepository.existsByTitleIgnoreCaseAndDeletedAtIsNull(request.getTitle());
+            if (titleTaken) {
+                throw new DuplicateResourceException("Exam already exists: " + request.getTitle());
+            }
+        }
+
+        if (!exam.getBluePrint().getTitle().equalsIgnoreCase(request.getBlueprintTitle())) {
+            BluePrint newBluePrint = bluePrintRepository.findByTitleIgnoreCaseAndDeletedAtIsNull(request.getBlueprintTitle()).orElseThrow(() -> new ResourceNotFoundException("Blueprint not found: " + request.getBlueprintTitle()));
+            exam.setBluePrint(newBluePrint);
+        }
+
+        examMapper.updateEntity(exam, request);
+
+        Exam savedExam = examRepository.save(exam);
+
+        return examMapper.toResponse(savedExam);
+    }
+
+    @Override
+    public void deleteExam(Long id) {
+        Exam exam = examRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
+
+        if (examAttemptRepository.existsByExamId(id)) {
+            throw new BadRequestException("Cannot delete an exam that already has candidate attempts");
+        }
+
+        exam.setDeletedAt(Instant.now());
+
+        examRepository.save(exam);
     }
 }

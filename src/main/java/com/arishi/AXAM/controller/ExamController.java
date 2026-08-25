@@ -57,4 +57,23 @@ public class ExamController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam status updated successfully", response));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ExamResponse>> updateExam(@PathVariable Long id, @Valid @RequestBody ExamRequest request) {
+
+        ExamResponse response = examService.updateExam(id, request);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam updated successfully", response));
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteExam(@PathVariable Long id) {
+
+        examService.deleteExam(id);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Exam deleted successfully", null));
+    }
+
 }

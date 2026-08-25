@@ -4,10 +4,7 @@ import com.arishi.AXAM.dto.request.AnswerRequest;
 import com.arishi.AXAM.dto.request.StartAttemptRequest;
 import com.arishi.AXAM.dto.responce.StartExamResponse;
 import com.arishi.AXAM.dto.responce.SubmitExamResponse;
-import com.arishi.AXAM.enums.BluePrintStatus;
-import com.arishi.AXAM.enums.ExamAttemptStatus;
-import com.arishi.AXAM.enums.ExamSchedulerStatus;
-import com.arishi.AXAM.enums.ExamStatus;
+import com.arishi.AXAM.enums.*;
 import com.arishi.AXAM.exception.BadRequestException;
 import com.arishi.AXAM.exception.ExamInProgressException;
 import com.arishi.AXAM.exception.ExamNotActiveException;
@@ -75,7 +72,8 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         //User authentication & exists
         Users user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getStatus().toString().equals("DISABLED")) {
+
+        if (user.getStatus() == UserStatus.BLOCKED) {
             throw new BadRequestException("User account is disabled");
         }
 
@@ -168,10 +166,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         int totalMarksForAttempt = 0;
 
         for (Question q : allQuestions) {
-            int marksForThisQuestion = marksRepository
-                    .findByExamIdAndDifficultyLevel(exam.getId(), q.getDifficultyLevel())
-                    .map(Marks::getMarks)
-                    .orElse(1); // fallback if admin never configured marks for this difficulty on this exam
+            int marksForThisQuestion = marksRepository.findByExamIdAndDifficultyLevel(exam.getId(), q.getDifficultyLevel()).map(Marks::getMarks).orElse(1); // fallback if admin never configured marks for this difficulty on this exam
 
             resolvedMarks.add(marksForThisQuestion);
             totalMarksForAttempt += marksForThisQuestion;
@@ -180,23 +175,8 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         // create exan attem record
         String activeSessionId = UUID.randomUUID().toString();
 
-        ExamAttempt attempt = ExamAttempt.builder()
-                .exam(exam)
-                .scheduler(scheduler)
-                .user(user)
-                .startAt(now)
-                .status(ExamAttemptStatus.IN_PROGRESS)
-                .activeSessionId(activeSessionId)
-                .lastActivityAt(now)
-                .totalQuestions(allQuestions.size())
-                .attemptedQuestions(0)
-                .unattemptedQuestions(allQuestions.size())
-                .correctAnswers(0)
-                .incorrectAnswers(0)
-                .obtainedMarks(0)
-                .totalMarks(totalMarksForAttempt) // CHANGED: was allQuestions.size()
-                .percentage(0.0f)
-                .build();
+        ExamAttempt attempt = ExamAttempt.builder().exam(exam).scheduler(scheduler).user(user).startAt(now).status(ExamAttemptStatus.IN_PROGRESS).activeSessionId(activeSessionId).lastActivityAt(now).totalQuestions(allQuestions.size()).attemptedQuestions(0).unattemptedQuestions(allQuestions.size()).correctAnswers(0).incorrectAnswers(0).obtainedMarks(0).totalMarks(totalMarksForAttempt) // CHANGED: was allQuestions.size()
+                .percentage(0.0f).build();
 
         attempt = examAttemptRepository.save(attempt);
 
@@ -233,15 +213,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
             questionDTOs.add(examAttemptMapper.toExamQuestionDTO(question, displayOrder));
         }
 
-        StartExamResponse response = StartExamResponse.builder()
-                .attemptId(attempt.getId())
-                .activeSessionId(activeSessionId)
-                .totalQuestions(allQuestions.size())
-                .duration((int) ChronoUnit.MINUTES.between(startTime, endTime))
-                .startTime(startTime)
-                .endTime(endTime)
-                .questions(questionDTOs)
-                .build();
+        StartExamResponse response = StartExamResponse.builder().attemptId(attempt.getId()).activeSessionId(activeSessionId).totalQuestions(allQuestions.size()).duration((int) ChronoUnit.MINUTES.between(startTime, endTime)).startTime(startTime).endTime(endTime).questions(questionDTOs).build();
 
         return response;
     }

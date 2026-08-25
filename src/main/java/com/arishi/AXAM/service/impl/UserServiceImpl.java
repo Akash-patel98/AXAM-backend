@@ -3,6 +3,7 @@ package com.arishi.AXAM.service.impl;
 import com.arishi.AXAM.dto.request.ChangePasswordRequest;
 import com.arishi.AXAM.dto.request.UpdateUserRequest;
 import com.arishi.AXAM.dto.responce.UserResponse;
+import com.arishi.AXAM.enums.UserStatus;
 import com.arishi.AXAM.exception.BadRequestException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.UserMapper;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -84,4 +86,32 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
     }
+
+    // admin enable/disable a user account
+    @Override
+    public UserResponse updateUserStatus(Long userId, UserStatus status) {
+
+        Set<UserStatus> allowedTargets = Set.of(UserStatus.ACTIVE, UserStatus.BLOCKED);
+
+        if (!allowedTargets.contains(status)) {
+            throw new BadRequestException("Status must be either ACTIVE or BLOCKED");
+        }
+
+        Users user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new BadRequestException("Cannot change status of a deleted user");
+        }
+        Users currentAdmin = getAuthenticatedUser();
+        if (currentAdmin.getId().equals(userId) && status == UserStatus.BLOCKED) {
+            throw new BadRequestException("You cannot block your own account");
+        }
+
+        user.setStatus(status);
+
+        Users updated = userRepository.save(user);
+
+        return userMapper.toResponse(updated);
+    }
+
 }

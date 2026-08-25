@@ -3,6 +3,7 @@ package com.arishi.AXAM.service;
 import com.arishi.AXAM.dto.request.ChangePasswordRequest;
 import com.arishi.AXAM.dto.request.UpdateUserRequest;
 import com.arishi.AXAM.dto.responce.UserResponse;
+import com.arishi.AXAM.enums.UserStatus;
 import jakarta.validation.Valid;
 
 
@@ -17,4 +18,6 @@ public interface UserService {
     UserResponse updateLoggedInUser(UpdateUserRequest request);
 
     void changePassword(@Valid ChangePasswordRequest request);
+
+    UserResponse updateUserStatus(Long userId, UserStatus status);
 }

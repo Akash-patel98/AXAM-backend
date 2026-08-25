@@ -16,4 +16,8 @@ public interface ExamService {
 
 
     ExamResponse updateStatus(Long id, ExamStatus newStatus);
+
+    ExamResponse updateExam(Long id, ExamRequest request);
+
+    void deleteExam(Long id);
 }

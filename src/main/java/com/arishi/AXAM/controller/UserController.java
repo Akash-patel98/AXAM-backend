@@ -5,6 +5,7 @@ import com.arishi.AXAM.dto.ApiResponse;
 import com.arishi.AXAM.dto.request.ChangePasswordRequest;
 import com.arishi.AXAM.dto.request.UpdateUserRequest;
 import com.arishi.AXAM.dto.responce.UserResponse;
+import com.arishi.AXAM.enums.UserStatus;
 import com.arishi.AXAM.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,15 @@ public class UserController {
         userService.changePassword(request);
 
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Password changed successfully", null));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{userId}/status")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(@PathVariable Long userId, @RequestParam UserStatus status) {
+
+        UserResponse response = userService.updateUserStatus(userId, status);
+
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "User status updated successfully", response));
     }
 
 }

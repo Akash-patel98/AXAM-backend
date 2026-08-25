@@ -29,4 +29,6 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
     List<ExamAttempt> findByUserEmailAndDeletedAtIsNull(String email);
 
     List<ExamAttempt> findByStatus(ExamAttemptStatus examAttemptStatus);
+
+    boolean existsByExamId(Long id);
 }

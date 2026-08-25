@@ -1,5 +1,6 @@
 package com.arishi.AXAM.dto.responce;
 
+import com.arishi.AXAM.enums.ExamStatus;
 import lombok.*;
 
 @Data
@@ -20,7 +21,7 @@ public class ExamResponse {
 
     private Integer duration;
 
-    private com.arishi.AXAM.enums.ExamStatus status;
+    private ExamStatus status;
 
     private Long blueprintId;
 

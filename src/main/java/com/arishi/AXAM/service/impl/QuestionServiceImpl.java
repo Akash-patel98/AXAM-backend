@@ -88,10 +88,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public PageResponse<QuestionResponse> searchQuestions(QuestionFilterRequest request) {
-        Specification<Question> specification = Specification
-                .where(QuestionSpecification.isNotDeleted())
-                .and(QuestionSpecification.hasCategory(request.getCategory()))
-                .and(QuestionSpecification.hasDifficultyLevel(request.getDifficultyLevel()));
+        Specification<Question> specification = Specification.where(QuestionSpecification.isNotDeleted()).and(QuestionSpecification.hasCategory(request.getCategory())).and(QuestionSpecification.hasDifficultyLevel(request.getDifficultyLevel()));
 
         Sort sort = request.getSortDir().equalsIgnoreCase("asc") ? Sort.by(request.getSortBy()).ascending() : Sort.by(request.getSortBy()).descending();
 

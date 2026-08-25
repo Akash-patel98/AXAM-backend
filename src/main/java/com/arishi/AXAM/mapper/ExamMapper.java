@@ -17,4 +17,13 @@ public class ExamMapper {
 
         return ExamResponse.builder().id(exam.getId()).title(exam.getTitle()).description(exam.getDescription()).instruction(exam.getInstruction()).passingPercentage(exam.getPassingPercentage()).duration(exam.getDuration()).status(exam.getStatus()).blueprintId(exam.getBluePrint().getId()).blueprintTitle(exam.getBluePrint().getTitle()).build();
     }
+
+    public void updateEntity(Exam exam, ExamRequest request) {
+        exam.setTitle(request.getTitle());
+        exam.setDescription(request.getDescription());
+        exam.setInstruction(request.getInstruction());
+        exam.setPassingPercentage(request.getPassingPercentage());
+        exam.setDuration(request.getDuration());
+
+    }
 }
