@@ -5,9 +5,12 @@ import com.arishi.AXAM.dto.request.UpdateUserRequest;
 import com.arishi.AXAM.dto.responce.UserResponse;
 import com.arishi.AXAM.enums.UserStatus;
 import com.arishi.AXAM.exception.BadRequestException;
+import com.arishi.AXAM.exception.DuplicateResourceException;
 import com.arishi.AXAM.exception.ResourceNotFoundException;
 import com.arishi.AXAM.mapper.UserMapper;
+import com.arishi.AXAM.model.RefreshToken;
 import com.arishi.AXAM.model.Users;
+import com.arishi.AXAM.repo.RefreshTokenRepository;
 import com.arishi.AXAM.repo.UserRepository;
 import com.arishi.AXAM.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -48,6 +52,11 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateLoggedInUser(UpdateUserRequest request) {
 
         Users user = getAuthenticatedUser();
+
+        if (request.getMobileNumber() != null && !request.getMobileNumber().equals(user.getMobileNumber()) && userRepository.existsByMobileNumberAndIdNotAndDeletedAtIsNull(request.getMobileNumber(), user.getId())) {
+
+            throw new DuplicateResourceException("Mobile number already exists");
+        }
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -85,6 +94,13 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);
+
+        // Revoke all existing refresh tokens
+        List<RefreshToken> tokens = refreshTokenRepository.findByUser(user);
+
+        tokens.forEach(token -> token.setRevoked(true));
+
+        refreshTokenRepository.saveAll(tokens);
     }
 
     // admin enable/disable a user account

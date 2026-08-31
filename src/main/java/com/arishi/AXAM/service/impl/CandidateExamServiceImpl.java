@@ -78,10 +78,7 @@ public class CandidateExamServiceImpl implements CandidateExamService {
 
         List<AttemptQuestion> attemptQuestions = attemptQuestionRepository.findByExamAttempt(attempt);
 
-        List<SubmitExamResponse.QuestionResultDTO> questionResults = attemptQuestions.stream()
-                .sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder()))
-                .map(examAttemptMapper::toQuestionResultDTO)
-                .collect(Collectors.toList());
+        List<SubmitExamResponse.QuestionResultDTO> questionResults = attemptQuestions.stream().sorted((a, b) -> a.getDisplayOrder().compareTo(b.getDisplayOrder())).map(examAttemptMapper::toQuestionResultDTO).collect(Collectors.toList());
 
         return ExamResultResponse.builder().attemptId(attempt.getId())
 
@@ -125,45 +122,26 @@ public class CandidateExamServiceImpl implements CandidateExamService {
 
         Long currentUserId = getCurrentUserId();
 
-        List<Exam> activeExams = examRepository.findByDeletedAtIsNull().stream()
-                .filter(exam -> exam.getStatus() == ExamStatus.ACTIVE)
-                .filter(exam -> exam.getBluePrint() != null
-                        && exam.getBluePrint().getBluePrintStatus() == BluePrintStatus.ACTIVE)
-                .toList();
+        List<Exam> activeExams = examRepository.findByDeletedAtIsNull().stream().filter(exam -> exam.getStatus() == ExamStatus.ACTIVE).filter(exam -> exam.getBluePrint() != null && exam.getBluePrint().getBluePrintStatus() == BluePrintStatus.ACTIVE).toList();
 
         Instant now = Instant.now();
         List<AvailableExamResponse> result = new ArrayList<>();
 
         for (Exam exam : activeExams) {
 
-            List<ExamScheduler> schedulers = examSchedulerRepository
-                    .findByExam_IdAndStatusAndDeletedAtIsNull(exam.getId(), ExamSchedulerStatus.ACTIVE);
+            List<ExamScheduler> schedulers = examSchedulerRepository.findByExam_IdAndStatusAndDeletedAtIsNull(exam.getId(), ExamSchedulerStatus.ACTIVE);
 
             for (ExamScheduler scheduler : schedulers) {
 
-                boolean withinWindow = !now.isBefore(scheduler.getStartDate()) && now.isBefore(scheduler.getEndDate());
+                if (!now.isBefore(scheduler.getEndDate())) continue;
 
-                if (!withinWindow) continue;
 
                 int attemptsUsed = examAttemptRepository.countByUserIdAndSchedulerId(currentUserId, scheduler.getId());
                 int attemptsRemaining = scheduler.getMaxAttempts() - attemptsUsed;
 
                 if (attemptsRemaining <= 0) continue;
 
-                result.add(AvailableExamResponse.builder()
-                        .examId(exam.getId())
-                        .title(exam.getTitle())
-                        .description(exam.getDescription())
-                        .instruction(exam.getInstruction())
-                        .duration(exam.getDuration())
-                        .passingPercentage(exam.getPassingPercentage())
-                        .schedulerId(scheduler.getId())
-                        .startDate(scheduler.getStartDate())
-                        .endDate(scheduler.getEndDate())
-                        .maxAttempts(scheduler.getMaxAttempts())
-                        .attemptsUsed(attemptsUsed)
-                        .attemptsRemaining(attemptsRemaining)
-                        .build());
+                result.add(AvailableExamResponse.builder().examId(exam.getId()).title(exam.getTitle()).description(exam.getDescription()).instruction(exam.getInstruction()).duration(exam.getDuration()).passingPercentage(exam.getPassingPercentage()).schedulerId(scheduler.getId()).startDate(scheduler.getStartDate()).endDate(scheduler.getEndDate()).maxAttempts(scheduler.getMaxAttempts()).attemptsUsed(attemptsUsed).attemptsRemaining(attemptsRemaining).build());
             }
         }
 

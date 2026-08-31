@@ -26,8 +26,6 @@ public interface AuthService {
 
     void resetPassword(ResetPasswordRequest request);
 
-    void changePassword(ChangePasswordRequest request);
-
     String refreshAccessToken(String refreshToken);
 
     void resendVerification(@Valid ResendVerificationRequest request);

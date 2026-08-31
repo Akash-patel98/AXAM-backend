@@ -94,14 +94,20 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         // Check if exam is within time window
         Instant now = Instant.now();
 
-        if (now.isBefore(scheduler.getStartDate()) || !now.isBefore(scheduler.getEndDate())) {
+        if (now.isBefore(scheduler.getStartDate())) {
 
-            if (!now.isBefore(scheduler.getEndDate()) && scheduler.getStatus() == ExamSchedulerStatus.ACTIVE) {
+            throw new ExamNotActiveException("Exam has not started yet. Please try again after the scheduled start time.");
+        }
+
+        if (!now.isBefore(scheduler.getEndDate())) {
+
+            if (scheduler.getStatus() == ExamSchedulerStatus.ACTIVE) {
+
                 scheduler.setStatus(ExamSchedulerStatus.COMPLETED);
                 examSchedulerRepository.save(scheduler);
             }
 
-            throw new ExamNotActiveException(String.format("Exam not active. Window: %s to %s. Current time: %s", scheduler.getStartDate(), scheduler.getEndDate(), now));
+            throw new ExamNotActiveException("This exam has ended and is no longer available.");
         }
 
         // validate User has attempts remaining

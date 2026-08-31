@@ -31,8 +31,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
 
@@ -65,6 +65,9 @@ public class AuthServiceImpl implements AuthService {
 
     private final LoginHistoryRepository loginHistoryRepository;
 
+    private final Map<String, List<Instant>> forgotPasswordAttempts = new ConcurrentHashMap<>();
+
+    private static final int MAX_ATTEMPTS_PER_HOUR = 3;
 
     private final EmailService emailService;
 
@@ -99,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
         token.setUser(user);
         String rawToken = UUID.randomUUID().toString();
         token.setTokenHash(hashUtil.sha256(rawToken));
-        token.setExpiresAt(Instant.now().plusSeconds(120));
+        token.setExpiresAt(Instant.now().plusSeconds(10 * 60));
 
         emailTokenRepository.save(token);
 
@@ -139,7 +142,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenIssuer.issue(user, null);
 
-        LoginResponse response = LoginResponse.builder().userId(user.getId()).email(user.getEmail()).role(user.getRole().getName()).fristName(user.getFirstName()).lastName(user.getLastName()).build();
+        LoginResponse response = LoginResponse.builder().userId(user.getId()).email(user.getEmail()).role(user.getRole().getName()).firstName(user.getFirstName()).lastName(user.getLastName()).build();
 
         return LoginResult.builder().response(response).accessToken(accessToken).refreshToken(refreshToken).build();
 
@@ -184,28 +187,45 @@ public class AuthServiceImpl implements AuthService {
         loginHistoryRepository.save(history);
     }
 
-
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
 
-        Users user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail()).orElse(null);
-        if (user == null) {
-            return;
-        }
+        String email = request.getEmail().toLowerCase(Locale.ROOT);
+        checkRateLimit(email);
 
+        Users user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail()).orElse(null);
+        if (user == null) return;
         PasswordResetToken token = new PasswordResetToken();
 
         token.setUser(user);
         String rawToken = UUID.randomUUID().toString();
         token.setTokenHash(hashUtil.sha256(rawToken));
-        token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+        token.setExpiresAt(Instant.now().plusSeconds(60 * 60)); //1 hour
 
         passwordResetRepository.save(token);
 
         String resetLink = frontendUrl + "/reset-password?token=" + rawToken;
 
         emailService.sendResetPasswordMail(user.getEmail(), user.getFirstName(), resetLink);
+    }
 
+    // helper method
+    private void checkRateLimit(String email) {
+
+        Instant now = Instant.now();
+        Instant oneHourAgo = now.minusSeconds(60 * 60);
+
+        List<Instant> attempts = forgotPasswordAttempts.computeIfAbsent(email, k -> new ArrayList<>());
+
+        synchronized (attempts) {
+            attempts.removeIf(instant -> instant.isBefore(oneHourAgo));
+
+            if (attempts.size() >= MAX_ATTEMPTS_PER_HOUR) {
+                throw new BadRequestException("Too many password reset requests. Please try again later.");
+            }
+
+            attempts.add(now);
+        }
     }
 
     @Transactional
@@ -270,40 +290,6 @@ public class AuthServiceImpl implements AuthService {
 
         tokens.forEach(token -> token.setRevoked(true));
 
-        refreshTokenRepository.saveAll(tokens);
-    }
-
-    @Override
-    @Transactional
-    public void changePassword(ChangePasswordRequest request) {
-
-        Authentication authentication = getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BadRequestException("User not authenticated");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof CustomUserDetails customUserDetails)) {
-            throw new BadRequestException("Unexpected principal");
-        }
-
-        Users user = customUserDetails.getUser();
-
-        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
-            throw new BadRequestException("Invalid old password");
-        }
-
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new BadRequestException("New passwords do not match");
-        }
-
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-
-        List<RefreshToken> tokens = refreshTokenRepository.findByUser(user);
-        tokens.forEach(t -> t.setRevoked(true));
         refreshTokenRepository.saveAll(tokens);
     }
 
