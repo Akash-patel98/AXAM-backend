@@ -2,6 +2,9 @@ package com.arishi.AXAM.model;
 
 import com.arishi.AXAM.enums.UserStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,12 +26,17 @@ public class Users extends BaseEntity {
     @JoinColumn(name = "role_id")
     private Roles role;
 
+    @NotBlank(message = "First name is required")
+    @Size(max = 50)
     @Column(nullable = false)
     private String firstName;
 
-    @Column(nullable = false)
+    @Size(max = 50)
+    @Column(length = 50)
     private String lastName;
 
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     @Column(unique = true, nullable = false)
     private String email;
 

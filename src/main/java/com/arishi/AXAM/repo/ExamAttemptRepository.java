@@ -31,4 +31,10 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
     List<ExamAttempt> findByStatus(ExamAttemptStatus examAttemptStatus);
 
     boolean existsByExamId(Long id);
+
+    Page<ExamAttempt> findAllByDeletedAtIsNull(Pageable pageable);
+
+    Page<ExamAttempt> findByExamIdAndDeletedAtIsNull(Long examId, Pageable pageable);
+
+    List<ExamAttempt> findTop5ByDeletedAtIsNullOrderByStartAtDesc();
 }

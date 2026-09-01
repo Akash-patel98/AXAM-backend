@@ -29,7 +29,7 @@ public class RefreshTokenIssuer {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setTokenHash(hashUtil.sha256(rawToken));
-        refreshToken.setExpiresAt(Instant.now().plusNanos(refreshTokenExpiryDays));
+        refreshToken.setExpiresAt(Instant.now().plus(refreshTokenExpiryDays, ChronoUnit.DAYS));
 
         refreshToken.setRevoked(false);
         refreshToken.setCreatedAt(Instant.now());
@@ -42,5 +42,4 @@ public class RefreshTokenIssuer {
         refreshTokenRepository.save(refreshToken);
         return rawToken;
     }
-
 }

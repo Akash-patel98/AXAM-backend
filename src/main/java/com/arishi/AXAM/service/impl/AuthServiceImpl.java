@@ -245,7 +245,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Delete cookies
         CookieUtils.deleteCookie(response, "accessToken", "/");
-        CookieUtils.deleteCookie(response, "refreshToken", "/api/auth");
+        CookieUtils.deleteCookie(response, "refreshToken", "/api/v1/auth");
     }
 
     @Override
@@ -297,7 +297,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public String refreshAccessToken(String refreshToken) {
 
-        RefreshToken token = refreshTokenRepository.findByTokenHash(refreshToken).orElseThrow(() -> new InvalidRefreshTokenException("Invalid refresh token"));
+        RefreshToken token = refreshTokenRepository.findByTokenHash(hashUtil.sha256(refreshToken)).orElseThrow(() -> new InvalidRefreshTokenException("Invalid refresh token"));
 
         if (token.isRevoked()) throw new InvalidRefreshTokenException("Refresh token has been revoked");
 
